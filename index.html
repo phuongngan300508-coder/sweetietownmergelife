@@ -1,0 +1,3891 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweetie Town: Merge Life</title>
+    <style>
+        :root {
+            --bg-color: #fff0f5;
+            --accent-pink: #ff85a2;
+            --soft-pink: #ffccd9;
+            --text-color: #5d5d5d;
+        }
+
+        body {
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100dvh;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
+        /* --- MÀN HÌNH ĐĂNG NHẬP --- */
+        #login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .login-card {
+            background: white;
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: 0 10px 25px rgba(255, 133, 162, 0.2);
+            text-align: center;
+            width: 80%;
+            max-width: 320px;
+        }
+
+        .login-card h2 { color: var(--accent-pink); margin-bottom: 20px; }
+        
+        .login-card input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid var(--soft-pink);
+            border-radius: 15px;
+            outline: none;
+            text-align: center;
+            box-sizing: border-box;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .login-card button {
+            background: var(--accent-pink);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* --- UI CHÍNH --- */
+        #player-tag {
+            background: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            color: var(--accent-pink);
+            font-weight: bold;
+            margin-bottom: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #ui-layer {
+            display: flex;
+            gap: 20px;
+            background: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            box-shadow: 0 5px 15px rgba(255, 133, 162, 0.1);
+            flex-shrink: 0;
+            margin-bottom: 5px;
+        }
+
+        #game-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        .stat-item { text-align: center; }
+        .label { font-size: 10px; text-transform: uppercase; color: var(--accent-pink); font-weight: bold; }
+        .value { font-size: 20px; font-weight: 900; }
+
+        #game-wrapper {
+    flex: 1;
+    width: 95%;          /* Tăng từ 100% lên để có khoảng cách nhỏ với lề */
+    max-width: 500px;     /* Tăng từ 400px lên 500px (hoặc tùy ý Henry) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    border: 4px solid #fff0f5; /* Thêm viền nhẹ cho khung chơi thêm xinh */
+}
+
+        canvas { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        #open-chart-btn {
+            margin: 10px 0;
+            flex-shrink: 0;
+            background: var(--accent-pink);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* Modal & Evolution Chart Styles (Giữ nguyên từ code cũ của bạn) */
+.modal { 
+    display: none; 
+    position: fixed; 
+    z-index: 100; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    background-color: rgba(0,0,0,0.5); 
+    backdrop-filter: blur(4px); 
+
+    /* Thêm 3 dòng này để căn giữa con */
+    display: none; /* Sẽ được đổi thành 'flex' bằng JS khi mở */
+    justify-content: center;
+    align-items: center;
+}
+
+/* Tìm lớp .modal-content và thay thế bằng: */
+.modal-content {
+    background-color: white;
+    padding: 25px;
+    border-radius: 25px;
+    width: 85%;
+    max-width: 450px;
+    position: relative;
+    box-shadow: 0 15px 35px rgba(255, 133, 162, 0.3);
+    
+    /* Xóa dòng margin: 10% auto cũ đi */
+    margin: 0; 
+    
+    /* Đảm bảo nội dung không quá dài gây tràn màn hình điện thoại */
+    max-height: 90dvh;
+    overflow-y: auto;
+    animation: popZoom 0.3s ease-out;
+}
+
+@keyframes popZoom {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+        .close-btn { position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #aaa; }
+        #evolution-chart { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; }
+        .evo-item { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; color: #5d5d5d; flex-shrink: 0; }
+        .level-label { font-size: 10px; font-weight: 800; color: var(--accent-pink); margin-top: 4px; background: rgba(255, 255, 255, 0.8); padding: 1px 4px; border-radius: 8px; text-transform: uppercase; }
+    
+    #tutorial-text {
+    animation: breathe 2s infinite ease-in-out;
+}
+
+@keyframes breathe {
+    0%, 100% { opacity: 0.3; transform: scale(0.95); }
+    50% { opacity: 0.8; transform: scale(1); }
+}
+
+.logout-btn {
+    background: #ffe1e9;
+    color: var(--accent-pink);
+    border: 1px solid var(--soft-pink);
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 10px;
+}
+
+.logout-btn:hover {
+    background: var(--accent-pink);
+    color: white;
+    transform: scale(1.05);
+}
+
+.history-btn {
+    background: white;
+    border: 2px solid var(--soft-pink);
+    color: var(--accent-pink);
+    padding: 8px 20px;
+    border-radius: 50px; /* Nút hình viên thuốc */
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(255, 133, 162, 0.1);
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.history-btn:hover {
+    background: var(--bg-color);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 133, 162, 0.2);
+}
+
+#history-list {
+    max-height: 200px;
+    overflow-y: auto;
+    text-align: left;
+    margin-top: 15px;
+    font-size: 12px;
+    border-top: 1px solid var(--bg-color);
+    padding-top: 10px;
+}
+
+.history-item {
+    background: var(--bg-color);
+    margin-bottom: 5px;
+    padding: 8px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-item b { color: var(--accent-pink); }
+.history-time { font-size: 10px; color: #aaa; }
+
+/* Popup Tiếp tục chơi */
+#resume-modal .modal-content {
+    border: 4px solid var(--soft-pink);
+    background: #fff;
+    max-width: 320px;
+}
+
+.resume-btn-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-restart {
+    flex: 1;
+    background: #eee;
+    border: none;
+    padding: 12px;
+    border-radius: 15px;
+    font-weight: bold;
+    color: #888;
+    cursor: pointer;
+}
+
+.btn-continue {
+    flex: 1;
+    background: var(--accent-pink);
+    border: none;
+    padding: 12px;
+    border-radius: 15px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(255,133,162,0.3);
+}
+
+.floating-score {
+    position: absolute;
+    pointer-events: none;
+    color: #ff5c8a; /* Màu đậm hơn cho dễ nhìn */
+    font-weight: 900;
+    font-size: 24px;
+    text-shadow: 2px 2px 0px white, -1px -1px 0px white;
+    z-index: 9999; /* Đảm bảo nằm trên cùng */
+    animation: floatUp 0.8s ease-out forwards;
+    white-space: nowrap;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -60px);
+        opacity: 0;
+    }
+}
+
+/* Popup Game Over */
+#game-over-modal .modal-content {
+    border: 4px solid #ff5c8a;
+    background: #fff;
+    max-width: 300px;
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.final-score-val {
+    font-size: 40px;
+    font-weight: 900;
+    color: var(--accent-pink);
+    margin: 10px 0;
+    display: block;
+}
+
+.btn-retry {
+    background: var(--accent-pink);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 18px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 20px;
+    box-shadow: 0 5px 15px rgba(255,133,162,0.4);
+    transition: transform 0.2s;
+}
+
+.btn-retry:hover {
+    transform: scale(1.05);
+}
+
+/* Nút mở bảng thử thách */
+#challenge-btn {
+    background: #ff85a2;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 5px;
+}
+
+/* Bảng Thử Thách & Nạp Tiền */
+.challenge-card, .recharge-card {
+    background: #fff0f5;
+    border: 3px solid #ffccd9;
+    border-radius: 25px;
+    padding: 20px;
+}
+
+.challenge-item {
+    background: white;
+    margin-bottom: 10px;
+    padding: 12px;
+    border-radius: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #ffccd9;
+}
+
+.challenge-info { text-align: left; flex: 1; }
+.challenge-title { font-weight: bold; color: #ff5c8a; font-size: 14px; }
+.challenge-desc { font-size: 11px; color: #888; }
+
+.btn-claim, .btn-unlock {
+    background: #ff85a2;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-locked { background: #ddd; cursor: not-allowed; }
+
+/* Hệ thống nạp tiền */
+#balance-display {
+    background: white;
+    padding: 5px 15px;
+    border-radius: 15px;
+    color: #ff5c8a;
+    font-weight: 900;
+    border: 2px solid #ffccd9;
+    margin-bottom: 10px;
+    display: inline-block;
+}
+
+.recharge-option {
+    display: inline-block;
+    background: white;
+    padding: 15px 20px;
+    margin: 8px;
+    border-radius: 20px;
+    border: 3px solid var(--soft-pink);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-weight: 900;
+    color: var(--accent-pink);
+    box-shadow: 0 4px 0px var(--soft-pink); /* Tạo hiệu ứng nút 3D */
+    min-width: 80px;
+    text-align: center;
+}
+
+.recharge-option:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-pink);
+    box-shadow: 0 6px 0px var(--soft-pink);
+}
+
+.recharge-option:active {
+    transform: translateY(2px); /* Hiệu ứng nhấn nút */
+    box-shadow: 0 0px 0px var(--soft-pink);
+}
+
+/* Nút + Nạp thêm tinh tế */
+.btn-recharge-inline {
+    background: linear-gradient(135deg, #ff85a2, #ffacbd);
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 8px rgba(255, 133, 162, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-recharge-inline:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 12px rgba(255, 133, 162, 0.5);
+    filter: brightness(1.05);
+}
+
+.btn-recharge-inline:active {
+    transform: scale(0.95);
+}
+
+/* Biểu tượng dấu cộng nhỏ bên trong nút */
+.btn-recharge-inline::before {
+    content: '✦';
+    font-size: 12px;
+}
+
+/* Xóa mũi tên tăng giảm mặc định của input number để trông đẹp hơn */
+#custom-amount::-webkit-inner-spin-button, 
+#custom-amount::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+#custom-amount {
+    -moz-appearance: textfield;
+}
+
+#custom-amount:focus {
+    border-color: var(--accent-pink) !important;
+    background-color: #fff9fb;
+}
+
+/* Thẻ phần thưởng nhỏ xinh */
+.reward-tag {
+    background: linear-gradient(135deg, #fff9c4, #fbc02d); /* Màu vàng kim loại kẹo ngọt */
+    color: #d84315;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 5px rgba(251, 192, 45, 0.4);
+    border: 1px solid #fff;
+    margin-top: 5px;
+}
+
+.reward-tag::before {
+    content: '🎁';
+}
+
+/* Hiệu ứng rung nhẹ cho mốc đã hoàn thành mà chưa nhận */
+@keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(3deg); }
+    75% { transform: rotate(-3deg); }
+}
+
+.btn-claim {
+    animation: shake 0.5s infinite;
+    background: linear-gradient(135deg, #ff85a2, #ff5c8a) !important;
+    border: 2px solid #fff !important;
+}
+
+#challenge-list {
+    margin-top: 15px;
+    max-height: 350px; /* Henry có thể chỉnh con số này tùy theo màn hình điện thoại */
+    overflow-y: auto;  /* Hiện thanh cuộn khi nội dung vượt quá chiều cao */
+    padding-right: 5px; /* Khoảng cách nhỏ để thanh cuộn không đè lên nút */
+}
+
+#challenge-list {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Trang trí thanh cuộn cho đồng bộ với tone hồng của game */
+#challenge-list::-webkit-scrollbar {
+    width: 6px;
+}
+#challenge-list::-webkit-scrollbar-track {
+    background: #fff0f5;
+    border-radius: 10px;
+}
+#challenge-list::-webkit-scrollbar-thumb {
+    background: var(--soft-pink);
+    border-radius: 10px;
+}
+#challenge-list::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-pink);
+}
+
+/* Thêm vào phần <style> */
+.challenge-item div[style*="font-size:12px"] {
+    transition: all 0.3s ease;
+    display: inline-block;
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Container chứa các đạo cụ - Thu nhỏ lại */
+#skill-layer {
+    display: flex;
+    justify-content: center;
+    gap: 8px; /* Khoảng cách nhỏ hơn */
+    margin: 5px 0;
+    width: 100%;
+    z-index: 10;
+}
+
+.skill-btn {
+    background: white;
+    border: 1.5px solid var(--soft-pink);
+    border-radius: 12px;
+    padding: 4px 8px; /* Giảm padding */
+    display: flex;
+    align-items: center; /* Căn giữa theo hàng ngang */
+    gap: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 3px 0 var(--soft-pink);
+    min-width: 80px; /* Độ rộng vừa phải */
+}
+
+.skill-btn:active {
+    transform: translateY(1.5px);
+    box-shadow: 0 1.5px 0 var(--soft-pink);
+}
+
+.skill-btn.active {
+    border-color: var(--accent-pink);
+    background: #fff0f5;
+    animation: pulse 1.5s infinite;
+}
+
+.skill-icon { font-size: 14px; } /* Icon nhỏ lại */
+.skill-name { font-size: 10px; color: #888; font-weight: bold; }
+.skill-count { 
+    font-size: 11px; 
+    font-weight: 900; 
+    color: var(--accent-pink);
+    background: var(--bg-color);
+    padding: 1px 4px;
+    border-radius: 5px;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Dòng chữ hướng dẫn dùng đạo cụ - Phiên bản co giãn thông minh */
+#skill-hint {
+    position: absolute;
+    top: 15px; /* Đưa lên cao một chút */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 92, 138, 0.95); /* Đậm hơn xíu cho rõ chữ */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 15px;
+    font-size: 13px;
+    font-weight: bold;
+    z-index: 100; /* Đảm bảo luôn nằm trên cùng */
+    pointer-events: none;
+    display: none;
+    box-shadow: 0 4px 15px rgba(255, 133, 162, 0.4);
+    animation: slideDown 0.3s ease-out;
+    
+    /* CHIẾN THUẬT CO GIÃN TẠI ĐÂY */
+    width: 85%;           /* Chiếm tối đa 85% chiều rộng màn hình */
+    max-width: 350px;     /* Nhưng không quá 350px trên máy tính */
+    text-align: center;   /* Căn giữa chữ khi xuống dòng */
+    line-height: 1.4;     /* Khoảng cách dòng thoáng đãng */
+    word-wrap: break-word; /* Tự động xuống dòng khi chữ quá dài */
+}
+
+@keyframes slideDown {
+    0% { transform: translate(-50%, -20px); opacity: 0; }
+    100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+/* Nút mở bảng nhiệm vụ - Hồng đậm hơn pastel */
+#quest-btn {
+    background: linear-gradient(135deg, #ff85a2, #ff5c8a); /* Hồng chuyển màu đậm */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 5px;
+    box-shadow: 0 4px 10px rgba(255, 92, 138, 0.3);
+}
+
+.quest-card {
+    background: #fff5f8; /* Hồng rất nhạt để làm nền */
+    border: 3px solid #ffb2c5; /* Viền hồng đậm vừa */
+    border-radius: 25px;
+    padding: 20px;
+}
+
+.quest-item {
+    background: white;
+    margin-bottom: 10px;
+    padding: 12px;
+    border-radius: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #ffccd9;
+}
+
+.quest-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.quest-progress-fill {
+    height: 100%;
+    background: #ff5c8a; /* Thanh tiến độ hồng đậm cá tính */
+    width: 0%;
+    transition: width 0.3s;
+}
+
+/* Thông báo nhiệm vụ hoàn thành */
+#quest-toast {
+    position: fixed;
+    top: 20px;
+    right: -300px; /* Ẩn ngoài màn hình */
+    background: linear-gradient(135deg, #ff85a2, #ff5c8a);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(255, 92, 138, 0.4);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: right 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-weight: bold;
+    font-size: 13px;
+    border: 2px solid white;
+}
+
+#quest-toast.show {
+    right: 20px; /* Hiện ra */
+}
+
+.toast-icon {
+    font-size: 20px;
+    animation: bounce 0.5s infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-5px); }
+}
+
+/* Hiệu ứng vạch Deadline nguy hiểm */
+@keyframes deadlineFlash {
+    0% { stroke: #ffccd9; stroke-width: 2; opacity: 1; }
+    50% { stroke: #ff0000; stroke-width: 5; opacity: 0.5; } /* Chuyển sang đỏ và dày hơn */
+    100% { stroke: #ffccd9; stroke-width: 2; opacity: 1; }
+}
+
+.deadline-warning {
+    animation: deadlineFlash 0.5s infinite;
+}
+
+.theme-btn {
+    background: white;
+    border: 2px solid var(--soft-pink);
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--accent-pink);
+    transition: all 0.2s;
+}
+.theme-btn.active {
+    background: var(--accent-pink);
+    color: white;
+    box-shadow: 0 3px 10px rgba(255, 133, 162, 0.3);
+}
+
+.section-note {
+    font-size: 10px;
+    color: #b1a1a6; /* Màu xám hồng nhạt */
+    margin: 4px 0 8px 0;
+    font-style: italic;
+    font-weight: 500;
+    pointer-events: none; /* Để người chơi lỡ ấn vào cũng không sao */
+    letter-spacing: 0.3px;
+}
+
+.main-menu-btn {
+    background: white;
+    color: var(--accent-pink);
+    border: 2px solid var(--soft-pink);
+    padding: 10px 15px;
+    border-radius: 15px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 0 var(--soft-pink);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.main-menu-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--soft-pink);
+}
+
+/* Chỉnh lại modal cho khít hơn */
+#theme-menu-modal .modal-content, 
+#skill-menu-modal .modal-content {
+    border: 3px solid var(--soft-pink);
+}
+
+/* --- POPUP THÔNG BÁO THÀNH CÔNG (PHIÊN BẢN DÀI) --- */
+#success-modal .modal-content {
+    border: 4px solid #fff;
+    background: linear-gradient(135deg, #fff5f8, #ffffff);
+    max-width: 320px; /* Tăng nhẹ độ rộng */
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(255, 133, 162, 0.4);
+    
+    /* Tăng padding top để đẩy nội dung xuống, lộ rõ icon */
+    padding: 60px 25px 30px 25px; 
+    overflow: visible; /* Quan trọng để icon không bị cắt mất */
+}
+
+.success-icon-circle {
+    width: 80px;  /* Tăng kích thước icon một chút */
+    height: 80px;
+    background: var(--accent-pink);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 40px;
+    
+    /* Vị trí icon: Nằm chính giữa và nhô lên cao hơn nữa */
+    position: absolute;
+    top: -40px; 
+    left: 50%;
+    transform: translateX(-50%);
+    
+    border: 6px solid white;
+    box-shadow: 0 8px 20px rgba(255, 133, 162, 0.3);
+    z-index: 10;
+    animation: bouncePop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes bouncePop {
+    0% { transform: translateX(-50%) scale(0); }
+    70% { transform: translateX(-50%) scale(1.2); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+
+.success-title {
+    color: var(--accent-pink);
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 12px;
+    margin-top: 10px; /* Tạo khoảng cách với icon */
+}
+
+.success-msg {
+    font-size: 15px;
+    color: #666; /* Chỉnh màu chữ đậm hơn một chút cho rõ */
+    line-height: 1.6;
+    margin-bottom: 25px;
+}
+
+.btn-close-success {
+    background: var(--accent-pink);
+    color: white;
+    border: none;
+    padding: 12px 35px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(255, 133, 162, 0.3);
+    transition: all 0.2s;
+}
+
+/* --- PHẦN LỊCH SỬ CHƠI --- */
+#game-history-modal .modal-content {
+    max-width: 400px;
+    border: 3px solid var(--soft-pink);
+    padding: 20px;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 13px;
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.history-table th {
+    background: var(--accent-pink);
+    color: white;
+    padding: 10px;
+    text-align: center;
+}
+
+.history-table td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--bg-color);
+    color: var(--text-color);
+}
+
+.history-table tr:last-child td { border-bottom: none; }
+.history-table tr:nth-child(even) { background: #fff9fb; }
+
+.history-score-badge {
+    background: #fff0f5;
+    color: var(--accent-pink);
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+#open-history-btn {
+    background: white;
+    color: var(--accent-pink);
+    border: 2px solid var(--soft-pink);
+    padding: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    box-shadow: 0 4px 10px rgba(255,133,162,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Nút âm thanh kẹo ngọt */
+#sound-toggle {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    width: 42px;
+    height: 42px;
+    background: white;
+    border: 3px solid var(--soft-pink);
+    border-radius: 50%;
+    display: none; /* MẶC ĐỊNH ẨN: Chỉ hiện sau khi đăng nhập */
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 2000;
+    box-shadow: 0 4px 12px rgba(255, 133, 162, 0.2);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#sound-toggle:hover {
+    transform: scale(1.1) rotate(5deg);
+}
+
+#sound-toggle.muted {
+    background: #fff9fb; /* Hồng cực nhẹ, không bị xám */
+    border-color: #ffdae3;
+    opacity: 0.8;
+}
+
+#sound-icon {
+    font-size: 20px;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.05));
+}
+
+/* Nút bánh răng nhỏ xinh cạnh tên */
+#open-settings-btn {
+    background: #fff0f5;
+    border: 1.5px solid var(--soft-pink);
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 14px;
+    padding: 2px 6px;
+    transition: all 0.2s;
+}
+
+#open-settings-btn:hover {
+    background: var(--soft-pink);
+    transform: rotate(30deg);
+}
+
+/* Card cài đặt */
+.settings-card {
+    border: 4px solid #fff;
+    background: linear-gradient(180deg, #ffffff 0%, #fff9fb 100%);
+    max-width: 320px;
+}
+
+.settings-section {
+    padding: 15px 0;
+    border-bottom: 1px dashed var(--soft-pink);
+    text-align: left;
+}
+
+.section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #b1a1a6;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 15px;
+    cursor: pointer;
+    border: 1px solid #fff5f8;
+}
+
+.setting-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+/* Công tắc Switch */
+.toggle-switch {
+    width: 40px;
+    height: 22px;
+    background: #ddd;
+    border-radius: 20px;
+    position: relative;
+    transition: 0.3s;
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: 0.3s;
+}
+
+.toggle-switch.active { background: var(--accent-pink); }
+.toggle-switch.active::after { left: 20px; }
+
+/* Hộp hướng dẫn */
+.tutorial-box {
+    background: #fff0f5;
+    padding: 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    color: #8a7078;
+    line-height: 1.6;
+}
+
+.settings-logout-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 15px;
+    border: none;
+    background: #ffe5ec;
+    color: #ff5c8a;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.settings-logout-btn:hover {
+    background: #ff5c8a;
+    color: white;
+}
+
+/* Nút mở Tiệm Tạp Hóa - Thiết kế đồng bộ 100% với Thử Thách & Nhiệm Vụ */
+#shop-btn {
+    background: #ff85a2; /* Màu hồng giống challenge-btn và quest-btn */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 5px;
+    transition: all 0.2s;
+    /* Nếu muốn có chút bóng đổ nhẹ cho xịn hơn */
+    box-shadow: 0 4px 10px rgba(255, 133, 162, 0.3);
+}
+
+/* Hiệu ứng khi chạm/nhấn vào nút */
+#shop-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 5px rgba(255, 133, 162, 0.3);
+}
+
+.shop-item {
+        background: white;
+        border: 2px solid #ffccd9;
+        border-radius: 15px;
+        padding: 10px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .shop-item:hover { transform: translateY(-3px); border-color: #ff85a2; box-shadow: 0 5px 15px rgba(255,133,162,0.1); }
+    
+    .shop-combo {
+        background: white;
+        border: 2px solid #ffccd9;
+        border-radius: 20px;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .shop-combo:hover { border-color: #ff5c8a; background: #fff9fb; transform: scale(1.02); }
+    
+    .btn-buy-combo {
+        background: #ff5c8a;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 8px 15px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 4px 0 #d6406b;
+    }
+    .btn-buy-combo:active { transform: translateY(2px); box-shadow: 0 0 0 #d6406b; }
+    
+    #game-timer-floating {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    background: rgba(255, 255, 255, 0.6); /* Nền trắng trong suốt */
+    backdrop-filter: blur(5px); /* Hiệu ứng mờ ảo sang trọng */
+    border: 1.5px solid rgba(255, 133, 162, 0.3); /* Viền hồng pastel cực nhạt */
+    padding: 4px 10px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    pointer-events: none; /* Để không cản trở việc chạm vào màn hình */
+    z-index: 20;
+    font-family: 'Courier New', Courier, monospace; /* Font số nhìn cho chuyên nghiệp */
+    font-weight: 900;
+    color: #ff85a2; /* Màu hồng thương hiệu của Henry */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    animation: fadeInTimer 0.5s ease-out;
+}
+
+@keyframes fadeInTimer {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Hiệu ứng nhấp nháy đỏ cho đồng hồ khi sắp bị treo */
+@keyframes timerWarning {
+    0%, 100% { background: rgba(255, 255, 255, 0.6); color: #ff85a2; transform: scale(1); }
+    50% { background: rgba(255, 0, 0, 0.2); color: red; transform: scale(1.05); border-color: red; }
+}
+
+.timer-warning-active {
+    animation: timerWarning 0.5s infinite ease-in-out !important;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3) !important;
+}
+
+/* Dòng chữ cảnh báo AFK */
+#afk-warning-text {
+    position: absolute;
+    top: 50px; /* Nằm dưới vạch Deadline một chút */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 100;
+    display: none; /* Mặc định ẩn */
+    white-space: nowrap;
+    box-shadow: 0 4px 10px rgba(255, 0, 0, 0.3);
+    animation: flashText 0.8s infinite;
+}
+
+@keyframes flashText {
+    0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+    50% { opacity: 0.7; transform: translateX(-50%) scale(0.95); }
+}
+
+/* Container thông báo đếm ngược AFK */
+#afk-countdown-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    border: 4px solid #ff5c8a;
+    padding: 20px;
+    border-radius: 25px;
+    text-align: center;
+    z-index: 10000;
+    box-shadow: 0 0 30px rgba(255, 92, 138, 0.5);
+    display: none; /* Mặc định ẩn */
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 200px;
+}
+
+.afk-title {
+    color: #ff5c8a;
+    font-weight: 900;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+#afk-timer-circle {
+    font-size: 40px;
+    font-weight: 900;
+    color: #ff5c8a;
+    margin: 10px 0;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.afk-hint {
+    font-size: 11px;
+    color: #888;
+    font-style: italic;
+}
+
+/* Hiệu ứng nhấp nháy cho khung khi sắp hết giờ */
+.afk-danger {
+    animation: afkShake 0.1s infinite;
+}
+
+@keyframes afkShake {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(1deg); }
+    75% { transform: translate(-50%, -50%) rotate(-1deg); }
+}
+
+/* Style cho Logo ở màn hình đăng nhập - Phiên bản Hình Tròn */
+.login-logo {
+    width: 120px;          
+    height: 120px;         /* Chiều cao phải bằng chiều rộng để tạo hình vuông */
+    margin-bottom: 15px;   
+    border-radius: 50%;    /* Biến khung thành hình tròn */
+    object-fit: cover;     /* Đảm bảo ảnh không bị méo khi đưa vào hình tròn */
+    border: 4px solid white; /* Thêm viền trắng cho nổi bật */
+    box-shadow: 0 8px 20px rgba(255, 133, 162, 0.4); /* Đổ bóng hồng kẹo ngọt */
+    animation: logoFloat 3s infinite ease-in-out; 
+    background-color: white; /* Nền trắng phòng trường hợp ảnh chưa tải xong */
+}
+
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(2deg); } /* Thêm chút độ nghiêng cho sinh động */
+}
+    </style>
+</head>
+<body>
+
+<div id="login-overlay">
+    <div class="login-card">
+        <img src="https://i.postimg.cc/SsGNCGg3/Gemini-Generated-Image-(2).png" alt="Sweetie Town Logo" class="login-logo">
+        
+        <h2>Chào Bạn Nhỏ! ✨</h2>
+        <p style="font-size: 13px; color: #888;">Nhập tên để lưu điểm nhé</p>
+        <input type="text" id="username-input" placeholder="Tên của bạn..." maxlength="12">
+        <button id="start-btn">Vào Chơi Ngay</button>
+<button class="history-btn" onclick="openHistory()">📖 Xem Nhật Ký Cư Dân</button>
+<div id="history-container" style="display: none;">
+    <div id="history-list"></div>
+</div>
+    </div>
+</div>
+
+<div id="player-tag">
+    <div style="display: flex; align-items: center; flex: 1;">
+        <span>🌸 Cư dân:</span>
+        <b id="display-name" style="margin-left: 5px; color: #ff5c8a;">...</b>
+        <button id="open-settings-btn" onclick="openModal('settings-modal')">⚙️</button>
+    </div>
+</div>
+
+<div id="settings-modal" class="modal">
+    <div class="modal-content settings-card">
+        <span class="close-btn" onclick="closeModal('settings-modal')">&times;</span>
+        <h3 style="color: var(--accent-pink); margin-bottom: 20px; font-size: 22px;">⚙️ Thiết Lập</h3>
+        
+        <div class="settings-section">
+            <p class="section-label">Âm thanh & Trải nghiệm</p>
+            <div class="setting-row" onclick="toggleSound()">
+                <div class="setting-info">
+                    <span id="setting-sound-icon">🔊</span>
+                    <span>Âm thanh kẹo ngọt</span>
+                </div>
+                <div id="sound-toggle-status" class="toggle-switch active"></div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+    <p class="section-label">Thông tin thị trấn</p>
+    <div class="setting-row" onclick="openModal('handbook-modal')">
+        <div class="setting-info">
+            <span>📖</span>
+            <span>Cẩm Nang Cư Dân</span>
+        </div>
+        <span style="color: var(--accent-pink); font-size: 18px;">❯</span>
+    </div>
+</div>
+
+        <div class="settings-section" style="border-bottom: none;">
+            <button class="settings-logout-btn" onclick="confirmLogoutFromSettings()">
+                🚪 Đăng xuất khỏi thị trấn
+            </button>
+        </div>
+        
+        <p style="font-size: 10px; color: #dbbcc6; margin-top: 10px;">Phiên bản Ngọt Ngào v2.6.0 ✨</p>
+    </div>
+</div>
+
+<div id="handbook-modal" class="modal" style="z-index: 3000;">
+    <div class="modal-content" style="max-width: 480px; padding: 0; overflow: hidden; border: 4px solid #ffccd9; border-radius: 30px;">
+        <div style="background: linear-gradient(135deg, #ff85a2, #ffccd9); padding: 25px 20px; color: white; position: relative; text-align: center;">
+            <span class="close-btn" onclick="closeModal('handbook-modal')" style="color: white; top: 15px; right: 20px;">&times;</span>
+            <h3 style="margin: 0; font-size: 20px; letter-spacing: 1px;">🌸 CẨM NANG CƯ DÂN 🌸</h3>
+            <p style="margin: 8px 0 0 0; font-size: 12px; opacity: 0.95; font-style: italic;">Chào mừng bạn đến với thế giới kẹo ngọt!</p>
+        </div>
+
+        <div style="padding: 20px; max-height: 65dvh; overflow-y: auto; text-align: left; background: #fff; line-height: 1.6; font-size: 13px; color: #5d5d5d;">
+            
+            <p style="margin-top: 0; border-left: 4px solid #ff85a2; padding-left: 10px; color: #888;">
+                Đây không chỉ là một trò chơi thả cầu đơn thuần, mà là một hành trình chiến thuật, nơi bạn xây dựng kỷ lục và chinh phục những thử thách đỉnh cao.
+            </p>
+
+            <section style="margin-bottom: 25px;">
+                <h4 style="color: #ff5c8a; border-bottom: 2px solid #fff0f5; padding-bottom: 5px; margin-bottom: 10px;">I. HƯỚNG DẪN CÁCH CHƠI CƠ BẢN</h4>
+                <p>Luật chơi rất đơn giản nhưng đầy gây nghiện:</p>
+                <ul style="padding-left: 18px; margin: 8px 0;">
+                    <li><b>Thả Cầu:</b> Chạm vào bất kỳ điểm nào trên màn hình để thả quả cầu từ trên xuống.</li>
+                    <li><b>Tiến Hóa:</b> Khi hai quả cầu cùng loại (cùng cấp độ) chạm nhau, chúng sẽ tự động hợp nhất và "biến hình" thành một quả cầu mới ở cấp độ cao hơn, to hơn và nhiều điểm hơn.</li>
+                    <li><b>Ghi Điểm:</b> Mỗi lần hợp nhất thành công, bạn sẽ nhận được điểm tương ứng với cấp độ quả đó.</li>
+                    <li><b>Vạch Deadline (Cảnh báo nguy hiểm):</b>
+                        <ul style="padding-left: 15px; list-style-type: circle;">
+                            <li>Phía trên màn hình có một vạch hồng kẻ đứt.</li>
+                            <li>Nếu cầu chồng quá cao và chạm vạch này trong 3 giây khi đã đứng yên, ván chơi sẽ kết thúc (Game Over).</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p style="background: #fff0f5; padding: 8px; border-radius: 10px; font-size: 12px;"><b>💡 Mẹo:</b> Khi vạch nhấp nháy đỏ, đó là lúc bạn cần dùng đạo cụ ngay lập tức!</p>
+            </section>
+
+            <section style="margin-bottom: 25px;">
+                <h4 style="color: #ff5c8a; border-bottom: 2px solid #fff0f5; padding-bottom: 5px; margin-bottom: 10px;">II. HỆ THỐNG PHONG CÁCH - 🎨</h4>
+                <p>Bạn có thể thay đổi diện mạo của toàn bộ thế giới thông qua nút "Đổi Giao Diện Cầu". Có 4 vũ trụ để bạn khám phá:</p>
+                <ul style="padding-left: 18px; margin: 8px 0;">
+                    <li><b>🍓 Trái Cây:</b> Phong cách cổ điển với Chuối, Táo, Đào... và cuối cùng là Dưa Hấu khổng lồ.</li>
+                    <li><b>🐱 Động Vật:</b> Từ những chú gà con chíp chíp đến Voi bản đôn oai vệ.</li>
+                    <li><b>💄 Mỹ Phẩm:</b> Dành cho các tín đồ làm đẹp với Son môi, Nhẫn kim cương và Vương miện quý tộc.</li>
+                    <li><b>🤖 Công Nghệ:</b> Dành cho các kỹ sư với Chuột máy tính, Laptop và Robot AI tối tân.</li>
+                </ul>
+            </section>
+
+            <section style="margin-bottom: 25px;">
+                <h4 style="color: #ff5c8a; border-bottom: 2px solid #fff0f5; padding-bottom: 5px; margin-bottom: 10px;">III. TÚI ĐỒ BỔ TRỢ - 🛠️</h4>
+                <p>Đừng để mình rơi vào thế bí! Hãy sử dụng 3 loại "Thẻ quyền năng" trong Kho Bổ Trợ:</p>
+                <ul style="padding-left: 18px; margin: 8px 0;">
+                    <li><b>🪄 Thẻ Vạn Năng:</b> Chọn thẻ này rồi chạm vào một quả cầu bất kỳ để nó tiến hóa ngay lập tức lên cấp tiếp theo mà không cần ghép cặp.</li>
+                    <li><b>🃏 Thẻ Lật Quả:</b> Đổi quả cầu đang chờ trên tay thành một quả khác ngẫu nhiên (có cơ hội ra quả to hơn bình thường).</li>
+                    <li><b>💣 Thẻ Xóa Cầu:</b> "Xóa sổ" toàn bộ các quả cầu cùng loại đang có trên màn hình. Cực kỳ hữu dụng khi màn hình quá chật chội.</li>
+                </ul>
+            </section>
+
+<section style="margin-bottom: 25px;">
+                <h4 style="color: #ff5c8a; border-bottom: 2px solid #fff0f5; padding-bottom: 5px; margin-bottom: 10px;">IV. TIỆM TẠP HÓA SWEETIE 🛍</h4>
+                <p>Nếu hết đạo cụ, cư dân có thể ghé thăm cửa hàng để mua sắm:</p>
+                <ul style="padding-left: 18px; margin: 8px 0;">
+                    <li><b>Gói Đơn Lẻ:</b> Mua lượt dùng thẻ lẻ với giá tiết kiệm chỉ từ 1.000đ.</li>
+                    <li><b>Combo Ưu Đãi:</b> Mua gói lớn (Siêu Cấp) để nhận thêm nhiều lượt dùng hơn và tiết kiệm chi phí lên đến 1.000đ mỗi lần mua.</li>
+                </ul>
+            </section>
+            
+            <section style="margin-bottom: 25px;">
+                <h4 style="color: #ff5c8a; border-bottom: 2px solid #fff0f5; padding-bottom: 5px; margin-bottom: 10px;">V. CÁC TÍNH NĂNG CHINH PHỤC & THÀNH TỰU</h4>
+                <p><b>1. 📜 Nhiệm Vụ Bổ Trợ</b><br>Hệ thống nhiệm vụ riêng biệt cho từng phong cách. Hoàn thành các yêu cầu như: Chơi đủ số ván, Hợp nhất X lần, hay Tạo ra quả Lv.10 để nhận thêm đạo cụ miễn phí.</p>
+                <p style="font-size: 12px; font-style: italic; color: #ff85a2;">* Tính năng đặc biệt: Khi xong nhiệm vụ, một thông báo nhỏ sẽ hiện lên. Bạn chỉ cần ấn vào đó để được dẫn thẳng tới nơi nhận thưởng.</p>
+                
+                <p><b>2. 🏆 Thử Thách Ngọt Ngào</b><br>Nơi bạn chứng minh đẳng cấp tích lũy! Sử dụng số dư để mở khóa các mốc thử thách. Khi tổng điểm vĩnh viễn của bạn đạt mốc (200k, 400k, 1 triệu...), bạn sẽ nhận được phần thưởng tiền mặt cực lớn vào tài khoản.</p>
+                
+                <p><b>3. 💖 Hệ Thống Nạp Xu Thiên Thần</b><br>Nếu muốn mở khóa thử thách nhanh hoặc mua thêm đạo cụ, bạn có thể nạp thêm xu. Hệ thống có các mốc nhanh (10k, 20k...) hoặc nạp tùy chọn kèm theo Nhật ký nạp xu minh bạch.</p>
+            </section>
+
+            <section style="margin-bottom: 25px;">
+                <h4 style="color: #ff5c8a; border-bottom: 2px solid #fff0f5; padding-bottom: 5px; margin-bottom: 10px;">VI. QUẢN LÝ CƯ DÂN & LỊCH SỬ</h4>
+                <ul style="padding-left: 18px; margin: 8px 0;">
+                    <li><b>🌸 Thẻ Cư Dân:</b> Hiển thị tên bạn lấp lánh trên góc màn hình.</li>
+                    <li><b>⚙️ Thiết Lập:</b> Bật/Tắt Âm thanh, xem hướng dẫn nhanh, Đăng xuất an toàn.</li>
+                    <li><b>📖 Nhật Ký Cư Dân:</b> Danh sách những người bạn đã từng ghé thăm thị trấn.</li>
+                    <li><b>📜 Nhật Ký Hành Trình:</b> Lưu lại 100 ván chơi gần nhất (điểm số, thời lượng, phong cách).</li>
+                    <li><b>🧬 Bảng Tiến Hóa:</b> Xem sơ đồ các cấp bậc cầu.</li>
+                </ul>
+            </section>
+
+            <section style="margin-bottom: 10px;">
+                <h4 style="color: #ff5c8a; border-bottom: 2px solid #fff0f5; padding-bottom: 5px; margin-bottom: 10px;">VII. TÍNH NĂNG THÔNG MINH</h4>
+                <ul style="padding-left: 18px; margin: 8px 0;">
+                    <li><b>Chơi tiếp:</b> Tự động hỏi để tiếp tục ván chơi dở khi quay lại.</li>
+                    <li><b>Cảnh Báo AFK:</b> Nếu không tương tác 4 phút, hệ thống sẽ cảnh báo và đếm ngược 60s trước khi tự động lưu và tạm nghỉ.</li>
+                    <li><b>Điểm trôi:</b> Hiệu ứng số điểm bay lên lấp lánh khi hợp nhất.</li>
+                </ul>
+                <div style="background: #fff5f8; border: 1px dashed #ff85a2; padding: 12px; border-radius: 15px; margin-top: 15px;">
+                    <b style="color: #ff5c8a;">💬 Lời khuyên từ game:</b> "Hãy tận dụng Thẻ Xóa Cầu cho những quả nhỏ li ti nằm dưới đáy, vì chúng thường là nguyên nhân khiến cầu bị chồng cao đấy!"
+                </div>
+            </section>
+
+        </div>
+    </div>
+</div>
+
+<div id="ui-layer">
+    <div class="stat-item">
+        <div class="label">Màn này</div>
+        <div id="score-board" class="value">0</div>
+    </div>
+    <div class="stat-item">
+        <div class="label">Kỷ lục</div>
+        <div id="high-score" class="value" style="color: #ffb347;">0</div>
+    </div>
+    <div class="stat-item">
+        <div class="label">Điểm tổng</div>
+        <div id="total-score" class="value">0</div>
+    </div>
+    <div class="stat-item">
+        <div class="label">Tiếp theo</div>
+        <div id="next-preview" style="width:30px; height:30px; border-radius:50%; margin: 5px auto; border:2px solid #eee;"></div>
+    </div>
+</div>
+
+<div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+    <button class="main-menu-btn" onclick="openModal('theme-menu-modal')">🎨 Đổi Giao Diện Cầu</button>
+    <button class="main-menu-btn" onclick="openModal('skill-menu-modal')">🛠️ Kho Bổ Trợ</button>
+</div>
+
+<div style="display: flex; gap: 5px; justify-content: center; margin-top: 5px;">
+    <button id="challenge-btn" onclick="openChallengeModal()">🏆 Thử Thách</button>
+    <button id="shop-btn" onclick="openShop()">🛍️ Tiệm Tạp Hóa</button>
+    <button id="quest-btn" onclick="openQuestModal()">📜 Nhiệm Vụ Bổ Trợ</button>
+</div>
+
+<div id="shop-modal" class="modal">
+    <div class="modal-content" style="max-width: 420px; background: #fffafc; border: 4px solid #ffccd9;">
+        <span class="close-btn" onclick="closeModal('shop-modal')">&times;</span>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="color: #ff5c8a; margin-bottom: 5px;">🛍️ Tiệm Tạp Hóa</h2>
+            <div id="shop-balance-display" style="display: inline-block; background: white; padding: 5px 15px; border-radius: 20px; border: 2px solid #ffccd9; color: #ff5c8a; font-weight: 900;">
+                Ví: <span id="shop-balance-val">0</span>đ
+            </div>
+        </div>
+
+        <div style="max-height: 450px; overflow-y: auto; padding-right: 5px;">
+            <p style="font-size: 12px; color: #ff85a2; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">✨ Gói Đơn Lẻ (1.000đ)</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                <div class="shop-item" onclick="buyItem('shuffle', 100, 1000)">
+                    <span style="font-size: 24px;">🃏</span>
+                    <div style="font-size: 11px; font-weight: bold; margin: 5px 0;">100 Thẻ Lật</div>
+                    <button style="background: #ff85a2; color: white; border: none; border-radius: 10px; padding: 4px 8px; font-size: 10px; cursor: pointer;">1.000đ</button>
+                </div>
+                <div class="shop-item" onclick="buyItem('delete', 70, 1000)">
+                    <span style="font-size: 24px;">💣</span>
+                    <div style="font-size: 11px; font-weight: bold; margin: 5px 0;">70 Thẻ Xóa</div>
+                    <button style="background: #ff85a2; color: white; border: none; border-radius: 10px; padding: 4px 8px; font-size: 10px; cursor: pointer;">1.000đ</button>
+                </div>
+                <div class="shop-item" onclick="buyItem('upgrade', 30, 1000)">
+                    <span style="font-size: 24px;">🪄</span>
+                    <div style="font-size: 11px; font-weight: bold; margin: 5px 0;">30 Vạn Năng</div>
+                    <button style="background: #ff85a2; color: white; border: none; border-radius: 10px; padding: 4px 8px; font-size: 10px; cursor: pointer;">1.000đ</button>
+                </div>
+            </div>
+
+            <p style="font-size: 12px; color: #ff5c8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">🎁 Combo Ưu Đãi (3.000đ)</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="shop-combo" onclick="buyItem('shuffle', 350, 3000)">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 30px;">🃏</span>
+                        <div style="text-align: left;">
+                            <div style="font-weight: 900; color: #ff5c8a;">Siêu Cấp Thẻ Lật</div>
+                            <div style="font-size: 11px; color: #888;">Gói lớn: 350 lượt dùng (Tiết kiệm 500đ)</div>
+                        </div>
+                    </div>
+                    <button class="btn-buy-combo">3.000đ</button>
+                </div>
+
+                <div class="shop-combo" onclick="buyItem('delete', 250, 3000)">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 30px;">💣</span>
+                        <div style="text-align: left;">
+                            <div style="font-weight: 900; color: #ff5c8a;">Đại Tiệc Bom Bii</div>
+                            <div style="font-size: 11px; color: #888;">Gói lớn: 250 lượt dùng (Tiết kiệm 500đ)</div>
+                        </div>
+                    </div>
+                    <button class="btn-buy-combo">3.000đ</button>
+                </div>
+
+                <div class="shop-combo" onclick="buyItem('upgrade', 120, 3000)">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 30px;">🪄</span>
+                        <div style="text-align: left;">
+                            <div style="font-weight: 900; color: #ff5c8a;">Quyền Năng Tối Thượng</div>
+                            <div style="font-size: 11px; color: #888;">Gói lớn: 120 lượt dùng (Tiết kiệm 1000đ)</div>
+                        </div>
+                    </div>
+                    <button class="btn-buy-combo">3.000đ</button>
+                </div>
+            </div>
+        </div>
+        <p style="font-size: 10px; color: #dbbcc6; margin-top: 15px;">🛍️ Mua xong đạo cụ sẽ tự động cộng vào túi đồ của cậu!</p>
+    </div>
+</div>
+
+<div id="confirm-buy-modal" class="modal" style="z-index: 6000;">
+    <div class="modal-content" style="max-width: 300px; border: 3px solid #ffccd9;">
+        <h3 style="color: var(--accent-pink); margin-top: 0;">Xác nhận mua 🛍️</h3>
+        <p id="confirm-buy-msg" style="font-size: 14px; color: #888; line-height: 1.5;">
+            Cậu chắc chắn muốn dùng <b id="buy-price" style="color: #ff5c8a;">0đ</b> để đổi lấy <b id="buy-amount" style="color: #ff5c8a;">0</b> đạo cụ chứ?
+        </p>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="closeModal('confirm-buy-modal')" style="flex: 1; background: #eee; border: none; padding: 12px; border-radius: 15px; cursor: pointer; font-weight: bold; color: #888;">Để sau</button>
+            <button id="btn-execute-buy" style="flex: 1; background: var(--accent-pink); border: none; padding: 12px; border-radius: 15px; cursor: pointer; font-weight: bold; color: white; box-shadow: 0 4px 10px rgba(255,133,162,0.3);">Mua luôn!</button>
+        </div>
+    </div>
+</div>
+
+<div id="theme-menu-modal" class="modal">
+    <div class="modal-content" style="max-width: 300px;">
+        <span class="close-btn" onclick="closeModal('theme-menu-modal')">&times;</span>
+        <h3 style="color: var(--accent-pink); margin-bottom: 15px;">🎨 Chọn Phong Cách</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="theme-btn active" onclick="changeTheme('fruit'); closeModal('theme-menu-modal')">🍓 Trái cây</button>
+            <button class="theme-btn" onclick="changeTheme('animal'); closeModal('theme-menu-modal')">🐱 Động vật</button>
+            <button class="theme-btn" onclick="changeTheme('cosmetic'); closeModal('theme-menu-modal')">💄 Mỹ phẩm</button>
+            <button class="theme-btn" onclick="changeTheme('tech'); closeModal('theme-menu-modal')">🤖 Công nghệ</button>
+        </div>
+        <p class="section-note" style="margin-top: 15px;">✨ Thay đổi diện mạo cho các quả cầu của cậu</p>
+    </div>
+</div>
+
+<div id="skill-menu-modal" class="modal">
+    <div class="modal-content" style="max-width: 320px;">
+        <span class="close-btn" onclick="closeModal('skill-menu-modal')">&times;</span>
+        <h3 style="color: var(--accent-pink); margin-bottom: 15px;">🛠️ Túi Đồ Của Cư Dân</h3>
+        <div id="skill-layer" style="flex-direction: column; gap: 12px;">
+            <div class="skill-btn" onclick="activateSkill('upgrade'); closeModal('skill-menu-modal')" id="skill-upgrade" style="width: 100%; box-sizing: border-box; justify-content: space-between; padding: 12px 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="skill-icon" style="font-size: 20px;">🪄</span>
+                    <span class="skill-name" style="font-size: 14px;">Thẻ Vạn Năng</span>
+                </div>
+                <span class="skill-count" id="count-upgrade">0</span>
+            </div>
+            
+            <div class="skill-btn" onclick="activateSkill('shuffle'); closeModal('skill-menu-modal')" id="skill-shuffle" style="width: 100%; box-sizing: border-box; justify-content: space-between; padding: 12px 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="skill-icon" style="font-size: 20px;">🃏</span>
+                    <span class="skill-name" style="font-size: 14px;">Thẻ Lật Quả</span>
+                </div>
+                <span class="skill-count" id="count-shuffle">0</span>
+            </div>
+
+            <div class="skill-btn" onclick="activateSkill('delete'); closeModal('skill-menu-modal')" id="skill-delete" style="width: 100%; box-sizing: border-box; justify-content: space-between; padding: 12px 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="skill-icon" style="font-size: 20px;">💣</span>
+                    <span class="skill-name" style="font-size: 14px;">Thẻ Xóa Cầu</span>
+                </div>
+                <span class="skill-count" id="count-delete">0</span>
+            </div>
+        </div>
+        <p class="section-note" style="margin-top: 15px;">💡 Chọn thẻ sau đó chạm vào quả cầu muốn dùng</p>
+    </div>
+</div>
+
+<div id="quest-modal" class="modal">
+    <div class="modal-content quest-card">
+        <span class="close-btn" onclick="closeModal('quest-modal')">&times;</span>
+        <h3 style="color: #ff5c8a">🌟 Nhiệm Vụ Bổ Trợ</h3>
+        <p style="font-size: 11px; color: #666; margin-bottom: 15px;">Hoàn thành để nhận thêm đạo cụ miễn phí!</p>
+        <div id="quest-list"></div>
+    </div>
+</div>
+
+<div id="challenge-modal" class="modal">
+    <div class="modal-content challenge-card">
+        <span class="close-btn" onclick="closeModal('challenge-modal')">&times;</span>
+        
+        <h3 style="color: #ff5c8a; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 15px;">
+            🌸 Thử Thách Ngọt Ngào
+            <button onclick="openModal('challenge-guide-modal')" 
+                    style="background: white; border: 2px solid #ffccd9; border-radius: 50%; width: 22px; height: 22px; 
+                           font-size: 12px; cursor: pointer; color: #ff85a2; font-weight: 900; display: flex; 
+                           align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(255,133,162,0.2);">?</button>
+        </h3>
+        
+        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+            <div id="balance-display" style="margin-bottom: 0;">
+                Số dư: <span id="user-balance">0</span>đ
+            </div>
+            <button class="btn-recharge-inline" onclick="openRecharge()">Nạp thêm</button>
+        </div>
+
+        <div id="challenge-list" style="margin-top: 15px;"></div>
+    </div>
+</div>
+
+<div id="challenge-guide-modal" class="modal" style="z-index: 5500;">
+    <div class="modal-content" style="max-width: 400px; text-align: left; border: 3px solid #ffccd9;">
+        <span class="close-btn" onclick="closeModal('challenge-guide-modal')">&times;</span>
+        <h3 style="color: var(--accent-pink); text-align: center;">📖 Cẩm Nang Thử Thách</h3>
+        
+        <div style="font-size: 13px; color: #666; line-height: 1.6;">
+            <p><b>1. Thử thách là gì?</b><br>Là hệ thống tích lũy <b>Điểm Tổng Vĩnh Viễn</b>. Khác với điểm từng màn, điểm này sẽ cộng dồn mãi mãi qua mọi ván chơi của cậu.</p>
+            
+            <p><b>2. Tại sao phải Mở Khóa?</b><br>Các mốc cao (Mốc 3 trở đi) yêu cầu cậu dùng một ít số dư để kích hoạt. Khi đã mở khóa, hệ thống mới bắt đầu ghi nhận điểm tích lũy cho mốc đó.</p>
+            
+            <p><b>3. Quy tắc "Điểm Phát Sinh":</b><br>Hệ thống chỉ tính điểm cậu kiếm được <b>SAU KHI</b> đã ấn nút Mở Khóa. 
+            <br><i style="font-size: 11px; color: #ff85a2;">Ví dụ: Nếu cậu đang có 100k điểm và mới ấn Mở Khóa Mốc 3, thì tiến độ Mốc 3 sẽ bắt đầu từ 0. Cậu cần kiếm thêm đủ số điểm yêu cầu để nhận thưởng.</i></p>
+            
+            <div style="background: #fff0f5; padding: 10px; border-radius: 15px; border: 1px dashed var(--accent-pink); margin-top: 10px;">
+                <b style="color: var(--accent-pink);">💡 Chiến thuật cư dân:</b> Hãy cố gắng mở khóa các mốc sớm nhất có thể để không lãng phí điểm số từ các ván chơi hiện tại nhé!
+            </div>
+        </div>
+        
+        <button onclick="closeModal('challenge-guide-modal')" class="btn-retry" style="margin-top: 20px; font-size: 15px; padding: 10px;">Đã hiểu rõ ✨</button>
+    </div>
+</div>
+
+<div id="recharge-modal" class="modal">
+    <div class="modal-content recharge-card">
+        <span class="close-btn" onclick="closeModal('recharge-modal')">&times;</span>
+        <h3 style="color: #ff5c8a">💖 Nạp Xu Thiên Thần</h3>
+        
+        <p style="font-size: 11px; color: #888; margin-bottom: 10px;">Chọn mốc nhanh:</p>
+        <div class="recharge-option" onclick="recharge(10000)">10k</div>
+        <div class="recharge-option" onclick="recharge(20000)">20k</div>
+        <div class="recharge-option" onclick="recharge(30000)">30k</div>
+        <div class="recharge-option" onclick="recharge(50000)">50k</div>
+
+        <div style="margin: 15px 0; border-top: 1px dashed #ffccd9; padding-top: 15px;">
+            <p style="font-size: 11px; color: #888; margin-bottom: 10px;">Hoặc nhập số tiền cậu muốn:</p>
+            <div style="display: flex; gap: 8px; justify-content: center; align-items: center;">
+                <input type="number" id="custom-amount" placeholder="Nhập số tiền..." 
+                       style="width: 120px; padding: 10px; border-radius: 15px; border: 2px solid var(--soft-pink); outline: none; text-align: center; color: var(--accent-pink); font-weight: bold;">
+                <button onclick="rechargeCustom()" class="btn-recharge-inline" style="margin-left: 0; padding: 10px 20px;">Nạp ngay</button>
+            </div>
+            <p style="font-size: 9px; color: #aaa; margin-top: 8px;">Tối thiểu: 1.000đ ✨</p>
+        </div>
+
+        <div style="margin-top: 15px; border-top: 2px solid #fff0f5; padding-top: 10px; text-align: left;">
+            <p style="font-size: 12px; font-weight: bold; color: #ff5c8a; margin-bottom: 8px;">🕒 Nhật ký nạp xu:</p>
+            <div id="recharge-history-list" style="max-height: 100px; overflow-y: auto; font-size: 11px;">
+                </div>
+        </div>
+    </div>
+</div>
+
+<div id="game-wrapper" style="position: relative;">
+    <div id="afk-countdown-box">
+        <div class="afk-title">🌸 ĐANG NGHỈ NGƠI?</div>
+        <div id="afk-timer-circle">60</div>
+        <div class="afk-hint">Chạm màn hình để tiếp tục nha!</div>
+    </div>
+    
+    <div id="afk-warning-text">⚠️ Mau tương tác để không bị treo máy!</div>
+    
+    
+  <div id="game-timer-floating">
+    <span style="font-size: 10px; opacity: 0.8; margin-right: 3px;">⏳</span>
+    <span id="live-timer-val">00:00</span>
+</div> 
+<div id="skill-hint"></div>
+
+<div id="tutorial-text" style="position: absolute; color: #ffccd9; font-weight: bold; font-size: 14px; pointer-events: none; z-index: 5; text-align: center; width: 100%; bottom: 50px;">
+        ✨ Vui lòng ấn chỗ bất kỳ để thả cầu ✨
+    </div>
+    <div id="game-container"></div>
+</div>
+
+<div style="display: flex; gap: 15px; align-items: center; margin-top: 10px;">
+    <button id="open-chart-btn" style="margin: 0;">🧬 Xem Bảng Tiến Hóa</button>
+    <button id="open-history-btn" onclick="openGameHistory()">📜</button>
+</div>
+
+<div id="game-history-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('game-history-modal')">&times;</span>
+        <h3 style="color: var(--accent-pink); text-align: center;">🌸 Nhật Ký Hành Trình 🌸</h3>
+        <p style="font-size: 11px; color: #888; text-align: center; margin-bottom: 15px;">Lưu giữ 100 kỷ niệm ngọt ngào gần nhất</p>
+        
+        <div style="max-height: 400px; overflow-y: auto; border-radius: 15px;">
+            <table class="history-table">
+    <thead>
+    <tr>
+        <th style="width: 50px;">Màn</th> 
+        <th>Thời lượng</th> <th>Phong cách</th>
+        <th>Số điểm</th>
+    </tr>
+</thead>
+    <tbody id="game-history-body">
+        </tbody>
+</table>
+        </div>
+    </div>
+</div>
+
+<div id="chart-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('chart-modal')">&times;</span>
+        
+        <h3 style="color: var(--accent-pink); text-align: center; margin-top: 10px; margin-bottom: 20px; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;">
+            🌸 Chuỗi Tiến Hóa 🌸
+        </h3>
+        
+        <div id="evolution-chart"></div>
+    </div>
+</div>
+
+<div id="logout-modal" class="modal" style="z-index: 2000;">
+    <div class="modal-content" style="max-width: 300px; padding: 30px; border: 3px solid var(--soft-pink);">
+        <h3 style="color: var(--accent-pink); margin-top: 0;">Rời đi sao? 🌸</h3>
+        <p style="font-size: 14px; color: #888; line-height: 1.5;">
+            Đừng lo nhé, dữ liệu của cậu vẫn sẽ được lưu lại an toàn khi cậu quay lại với tên cũ! ✨
+        </p>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="closeLogoutModal()" style="flex: 1; background: #eee; border: none; padding: 10px; border-radius: 15px; cursor: pointer; font-weight: bold; color: #888;">Ở lại</button>
+            <button onclick="confirmLogout()" style="flex: 1; background: var(--accent-pink); border: none; padding: 10px; border-radius: 15px; cursor: pointer; font-weight: bold; color: white; box-shadow: 0 4px 10px rgba(255,133,162,0.3);">Đồng ý</button>
+        </div>
+    </div>
+</div>
+
+<div id="history-modal" class="modal" style="z-index: 2500;">
+    <div class="modal-content" style="max-width: 350px; padding: 20px; border-radius: 30px;">
+        <span class="close-btn" onclick="closeHistory()">&times;</span>
+        <h3 style="color: var(--accent-pink); margin-bottom: 15px;">📔 Nhật Ký Cư Dân</h3>
+        
+        <div style="max-height: 300px; overflow-y: auto; border-radius: 15px; border: 1px solid var(--bg-color);">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+    <thead style="background: var(--bg-color); color: var(--accent-pink); position: sticky; top: 0;">
+        <tr>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid var(--soft-pink);">Cư dân</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid var(--soft-pink);">Ngày gia nhập</th>
+        </tr>
+    </thead>
+    <tbody id="history-table-body"></tbody>
+</table>
+        </div>
+        
+        <p style="font-size: 10px; color: #ccc; margin-top: 15px;">Dữ liệu lưu trữ 100 tài khoản gần nhất ✨</p>
+    </div>
+</div>
+
+<div id="resume-modal" class="modal" style="z-index: 3000;">
+    <div class="modal-content">
+        <h3 style="color: var(--accent-pink); margin-top: 0;">Mừng cậu quay lại! 🌸</h3>
+        <p id="resume-msg" style="font-size: 14px; color: #888; line-height: 1.5;">
+            Tớ thấy cậu còn một ván chơi dở với <b>0</b> điểm. Cậu muốn tiếp tục hay chơi ván mới?
+        </p>
+        <div class="resume-btn-group">
+            <button class="btn-restart" onclick="handleResumeChoice(false)">Ván mới</button>
+            <button class="btn-continue" onclick="handleResumeChoice(true)">Chơi tiếp</button>
+        </div>
+    </div>
+</div>
+
+<div id="game-over-modal" class="modal" style="z-index: 4000;">
+    <div class="modal-content">
+        <h2 style="color: var(--accent-pink); margin-top: 0;">Opps! Hết chỗ rồi 🌸</h2>
+        <p style="font-size: 14px; color: #888;">Cố gắng hơn ở ván sau nhé!</p>
+        
+        <div style="margin: 20px 0; padding: 15px; background: var(--bg-color); border-radius: 20px;">
+            <span style="font-size: 12px; color: var(--accent-pink); font-weight: bold; text-transform: uppercase;">Điểm ván này</span>
+            <span id="final-score-display" class="final-score-val">0</span>
+        </div>
+
+        <button class="btn-retry" onclick="handleRetry()">Chơi lại từ đầu ✨</button>
+    </div>
+</div>
+
+<div id="confirm-recharge-modal" class="modal" style="z-index: 5000;">
+    <div class="modal-content" style="max-width: 300px; border: 3px solid #ffccd9;">
+        <h3 style="color: var(--accent-pink); margin-top: 0;">Xác nhận nạp ✨</h3>
+        <p id="confirm-msg" style="font-size: 14px; color: #888; line-height: 1.5;">
+            Cậu chắc chắn muốn nạp <b id="pending-amount" style="color: #ff5c8a;">0đ</b> vào tài khoản chứ?
+        </p>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="closeModal('confirm-recharge-modal')" style="flex: 1; background: #eee; border: none; padding: 12px; border-radius: 15px; cursor: pointer; font-weight: bold; color: #888;">Suy nghĩ lại</button>
+            <button onclick="executeRecharge()" style="flex: 1; background: var(--accent-pink); border: none; padding: 12px; border-radius: 15px; cursor: pointer; font-weight: bold; color: white; box-shadow: 0 4px 10px rgba(255,133,162,0.3);">Chắc chắn!</button>
+        </div>
+    </div>
+</div>
+
+<div id="quest-toast" onclick="jumpToQuest()">
+    <span class="toast-icon">🌟</span>
+    <div>
+        <div style="font-size: 10px; opacity: 0.9;">NHIỆM VỤ HOÀN THÀNH! (Ấn để nhận)</div>
+        <div id="quest-toast-name">Tên nhiệm vụ</div>
+    </div>
+</div>
+
+<div id="success-modal" class="modal" style="z-index: 9999;">
+    <div class="modal-content">
+        <div class="success-icon-circle" id="success-icon">✨</div>
+        <div class="success-title" id="success-title">Tuyệt vời!</div>
+        <div class="success-msg" id="success-msg">Hành động đã hoàn tất thành công.</div>
+        <button class="btn-close-success" onclick="closeModal('success-modal')">Xác nhận 🌸</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+
+<script>
+  
+ const QUEST_THEMES = {
+    fruit: [
+        { id: 'f1', title: 'Nông Dân Tập Sự', desc: 'Chơi 3 ván trái cây', target: 3, reward: { type: 'delete', amount: 1 }, icon: '🧺' },
+        { id: 'f2', title: 'Ép Nước Trái Cây', desc: 'Hợp nhất 30 lần', target: 30, reward: { type: 'shuffle', amount: 2 }, icon: '🍹' },
+        { id: 'f3', title: 'Vườn Trái Chín', desc: 'Đạt 20,000 điểm vĩnh viễn', target: 20000, reward: { type: 'upgrade', amount: 1 }, icon: '🍒' },
+        { id: 'f4', title: 'Sứ Giả Táo Đỏ', desc: 'Tạo 5 quả Táo (Lv.6)', target: 5, reward: { type: 'delete', amount: 2 }, icon: '🍎' },
+        { id: 'f5', title: 'Chủ Vườn Đào', desc: 'Tạo 3 quả Đào (Lv.8)', target: 3, reward: { type: 'upgrade', amount: 1 }, icon: '🍑' },
+        { id: 'f6', title: 'Đại Tiệc Buffet', desc: 'Hợp nhất 100 lần', target: 100, reward: { type: 'shuffle', amount: 3 }, icon: '🥗' },
+        { id: 'f7', title: 'Trái Cây Nhiệt Đới', desc: 'Đạt 80,000 điểm vĩnh viễn', target: 80000, reward: { type: 'delete', amount: 3 }, icon: '🍍' },
+        { id: 'f8', title: 'Thợ Săn Dưa Hấu', desc: 'Tạo 1 quả Dưa Hấu (Lv.10)', target: 1, reward: { type: 'upgrade', amount: 2 }, icon: '🍉' },
+        { id: 'f9', title: 'Nông Trại Vui Vẻ', desc: 'Chơi 15 ván trái cây', target: 15, reward: { type: 'shuffle', amount: 5 }, icon: '🚜' },
+        { id: 'f10', title: 'Vua Xuất Khẩu', desc: 'Đạt 200,000 điểm vĩnh viễn', target: 200000, reward: { type: 'upgrade', amount: 3 }, icon: '🚢' },
+        { id: 'f11', title: 'Hợp Nhất Thần Tốc', desc: 'Hợp nhất 300 lần', target: 300, reward: { type: 'delete', amount: 5 }, icon: '⚡' },
+        { id: 'f12', title: 'Huyền Thoại Orchard', desc: 'Đạt 50,000 điểm trong 1 ván', target: 50000, reward: { type: 'upgrade', amount: 5 }, icon: '👑' }
+    ],
+    animal: [
+        { id: 'a1', title: 'Bạn Của Muôn Loài', desc: 'Chơi 3 ván động vật', target: 3, reward: { type: 'delete', amount: 1 }, icon: '🐾' },
+        { id: 'a2', title: 'Tiếng Gọi Nơi Hoang Dã', desc: 'Hợp nhất 30 lần', target: 30, reward: { type: 'shuffle', amount: 2 }, icon: '📢' },
+        { id: 'a3', title: 'Sở Thú Nhỏ', desc: 'Đạt 20,000 điểm vĩnh viễn', target: 20000, reward: { type: 'upgrade', amount: 1 }, icon: '🐰' },
+        { id: 'a4', title: 'Đàn Gấu Ham Ăn', desc: 'Tạo 5 Gấu (Lv.6)', target: 5, reward: { type: 'delete', amount: 2 }, icon: '🐻' },
+        { id: 'a5', title: 'Bầy Trăn Khổng Lồ', desc: 'Tạo 3 Sư Tử (Lv.8)', target: 3, reward: { type: 'upgrade', amount: 1 }, icon: '🦁' },
+        { id: 'a6', title: 'Di Cư Xuyên Lục Địa', desc: 'Hợp nhất 100 lần', target: 100, reward: { type: 'shuffle', amount: 3 }, icon: '🌍' },
+        { id: 'a7', title: 'Khu Bảo Tồn Xanh', desc: 'Đạt 80,000 điểm vĩnh viễn', target: 80000, reward: { type: 'delete', amount: 3 }, icon: '🌿' },
+        { id: 'a8', title: 'Voi Bản Đôn', desc: 'Tạo 1 Voi (Lv.10)', target: 1, reward: { type: 'upgrade', amount: 2 }, icon: '🐘' },
+        { id: 'a9', title: 'Nhà Động Vật Học', desc: 'Chơi 15 ván động vật', target: 15, reward: { type: 'shuffle', amount: 5 }, icon: '🔬' },
+        { id: 'a10', title: 'Chúa Tể Rừng Xanh', desc: 'Đạt 200,000 điểm vĩnh viễn', target: 200000, reward: { type: 'upgrade', amount: 3 }, icon: '🐅' },
+        { id: 'a11', title: 'Cuộc Đua Kỳ Thú', desc: 'Hợp nhất 300 lần', target: 300, reward: { type: 'delete', amount: 5 }, icon: '🏇' },
+        { id: 'a12', title: 'Kỷ Nguyên Thú Cưng', desc: 'Đạt 50,000 điểm trong 1 ván', target: 50000, reward: { type: 'upgrade', amount: 5 }, icon: '🛸' }
+    ],
+    cosmetic: [
+        { id: 'c1', title: 'Học Cách Makeup', desc: 'Chơi 3 ván mỹ phẩm', target: 3, reward: { type: 'delete', amount: 1 }, icon: '🎨' },
+        { id: 'c2', title: 'Pha Màu Son', desc: 'Hợp nhất 30 lần', target: 30, reward: { type: 'shuffle', amount: 2 }, icon: '🧪' },
+        { id: 'c3', title: 'Bàn Trang Điểm', desc: 'Đạt 20,000 điểm vĩnh viễn', target: 20000, reward: { type: 'upgrade', amount: 1 }, icon: '💄' },
+        { id: 'c4', title: 'Nhẫn Kim Cương', desc: 'Tạo 5 Nhẫn (Lv.6)', target: 5, reward: { type: 'delete', amount: 2 }, icon: '💍' },
+        { id: 'c5', title: 'Bộ Sưu Tập Túi', desc: 'Tạo 3 Túi xách (Lv.8)', target: 3, reward: { type: 'upgrade', amount: 1 }, icon: '👜' },
+        { id: 'c6', title: 'Tuần Lễ Thời Trang', desc: 'Hợp nhất 100 lần', target: 100, reward: { type: 'shuffle', amount: 3 }, icon: '👠' },
+        { id: 'c7', title: 'Nữ Hoàng Tiệc Tùng', desc: 'Đạt 80,000 điểm vĩnh viễn', target: 80000, reward: { type: 'delete', amount: 3 }, icon: '💃' },
+        { id: 'c8', title: 'Vương Miện Quý Tộc', desc: 'Tạo 1 Vương miện (Lv.10)', target: 1, reward: { type: 'upgrade', amount: 2 }, icon: '👑' },
+        { id: 'c9', title: 'Beauty Blogger', desc: 'Chơi 15 ván mỹ phẩm', target: 15, reward: { type: 'shuffle', amount: 5 }, icon: '📸' },
+        { id: 'c10', title: 'Đại Sứ Thương Hiệu', desc: 'Đạt 200,000 điểm vĩnh viễn', target: 200000, reward: { type: 'upgrade', amount: 3 }, icon: '💎' },
+        { id: 'c11', title: 'Màn Biến Hình', desc: 'Hợp nhất 300 lần', target: 300, reward: { type: 'delete', amount: 5 }, icon: '✨' },
+        { id: 'c12', title: 'Biểu Tượng Nhan Sắc', desc: 'Đạt 50,000 điểm trong 1 ván', target: 50000, reward: { type: 'upgrade', amount: 5 }, icon: '🦄' }
+    ],
+    tech: [
+        { id: 't1', title: 'Lắp Ráp Linh Kiện', desc: 'Chơi 3 ván công nghệ', target: 3, reward: { type: 'delete', amount: 1 }, icon: '⚙️' },
+        { id: 't2', title: 'Ép Xung CPU', desc: 'Hợp nhất 30 lần', target: 30, reward: { type: 'shuffle', amount: 2 }, icon: '🚀' },
+        { id: 't3', title: 'Phòng Máy Tính', desc: 'Đạt 20,000 điểm vĩnh viễn', target: 20000, reward: { type: 'upgrade', amount: 1 }, icon: '🖥️' },
+        { id: 't4', title: 'Ống Kính Cơ Học', desc: 'Tạo 5 Máy ảnh (Lv.6)', target: 5, reward: { type: 'delete', amount: 2 }, icon: '📷' },
+        { id: 't5', title: 'Lập Trình Viên', desc: 'Tạo 3 Laptop (Lv.8)', target: 3, reward: { type: 'upgrade', amount: 1 }, icon: '💻' },
+        { id: 't6', title: 'Mạng Lưới Toàn Cầu', desc: 'Hợp nhất 100 lần', target: 100, reward: { type: 'shuffle', amount: 3 }, icon: '🌐' },
+        { id: 't7', title: 'Thành Phố Thông Minh', desc: 'Đạt 80,000 điểm vĩnh viễn', target: 80000, reward: { type: 'delete', amount: 3 }, icon: '🏙️' },
+        { id: 't8', title: 'Trí Tuệ Nhân Tạo', desc: 'Tạo 1 Robot (Lv.10)', target: 1, reward: { type: 'upgrade', amount: 2 }, icon: '🤖' },
+        { id: 't9', title: 'Kỹ Sư Phần Mềm', desc: 'Chơi 15 ván công nghệ', target: 15, reward: { type: 'shuffle', amount: 5 }, icon: '👨‍💻' },
+        { id: 't10', title: 'Thung Lũng Silicon', desc: 'Đạt 200,000 điểm vĩnh viễn', target: 200000, reward: { type: 'upgrade', amount: 3 }, icon: '🏔️' },
+        { id: 't11', title: 'Thuật Toán Tối Ưu', desc: 'Hợp nhất 300 lần', target: 300, reward: { type: 'delete', amount: 5 }, icon: '🧮' },
+        { id: 't12', title: 'Bậc Thầy Công Nghệ', desc: 'Đạt 50,000 điểm trong 1 ván', target: 50000, reward: { type: 'upgrade', amount: 5 }, icon: '🌌' }
+    ]
+};
+
+  let afkTimer;
+  let isAfkWarning = false; // Trạng thái đang cảnh báo treo máy
+const AFK_TIME = 5 * 60 * 1000; // 5 phút
+    // --- LOGIC QUẢN LÝ NGƯỜI CHƠI ---
+    let currentPlayer = "";
+    let totalScore = 0;
+    let isNearDeadline = false; // Trạng thái cảnh báo nguy hiểm
+    let isMuted = false;
+
+    const loginOverlay = document.getElementById('login-overlay');
+    const usernameInput = document.getElementById('username-input');
+    const startBtn = document.getElementById('start-btn');
+    const displayName = document.getElementById('display-name');
+    const totalScoreEl = document.getElementById('total-score');
+
+    function initPlayer() {
+        const savedPlayer = localStorage.getItem('fruit_current_session');
+        if (savedPlayer) {
+            login(savedPlayer);
+        }
+    }
+
+   function login(name) {
+    currentPlayer = name;
+    checkResumeGame();
+    localStorage.setItem('fruit_current_session', name);
+    recordActivity(name); 
+
+    const allData = JSON.parse(localStorage.getItem('fruit_players_data') || '{}');
+    const playerData = allData[name];
+    
+    if (playerData) {
+        // NẾU ĐÃ CÓ ACC: Lấy lại toàn bộ thông số cũ
+        totalScore = playerData.total || 0;
+        highScore = playerData.best || 0;
+        playerStats = playerData.challengeStats;
+
+        // --- BẢO TRÌ NHIỆM VỤ THEO THEME ---
+        if (!playerStats.quests) playerStats.quests = {};
+        
+        Object.keys(QUEST_THEMES).forEach(theme => {
+            if (!playerStats.quests[theme]) {
+                playerStats.quests[theme] = {};
+            }
+            QUEST_THEMES[theme].forEach(q => {
+                if (!playerStats.quests[theme][q.id]) {
+                    playerStats.quests[theme][q.id] = { current: 0, claimed: false };
+                }
+            });
+        });
+    } else {
+        // NẾU LÀ ACC MỚI TOANH
+        totalScore = 0;
+        highScore = 0;
+
+        let initialQuests = {};
+        Object.keys(QUEST_THEMES).forEach(theme => {
+            initialQuests[theme] = {};
+            QUEST_THEMES[theme].forEach(q => {
+                initialQuests[theme][q.id] = { current: 0, claimed: false };
+            });
+        });
+
+        playerStats = {
+            balance: 0,
+            totalGamesPlayed: 0,
+            gameLogs: [],
+            rechargeHistory: [],
+            skills: { upgrade: 1, shuffle: 2, delete: 3 },
+            quests: initialQuests,
+            challenges: {
+                1: { unlocked: true, currentProgress: 0, completed: false, startPoint: 0 },
+                2: { unlocked: true, currentProgress: 0, completed: false, startPoint: 0 },
+                3: { unlocked: false, currentProgress: 0, completed: false, startPoint: 0 },
+                4: { unlocked: false, currentProgress: 0, completed: false, startPoint: 0 },
+                5: { unlocked: false, currentProgress: 0, completed: false, startPoint: 0 }
+            }
+        };
+        
+        saveChallengeData();
+    }
+
+    // 3. Cập nhật UI
+    displayName.innerText = name;
+    totalScoreEl.innerText = totalScore.toLocaleString();
+    document.getElementById('high-score').innerText = highScore.toLocaleString();
+    
+    updateBalanceUI();
+    updateSkillUI();
+
+    // --- PHẦN THÊM MỚI: HIỆN NÚT ÂM THANH KHI VÀO GAME ---
+    const soundBtn = document.getElementById('sound-toggle');
+    if (soundBtn) soundBtn.style.display = 'flex'; 
+
+    // 4. Hiệu ứng ẩn màn hình login
+    loginOverlay.style.opacity = '0';
+    setTimeout(() => {
+        loginOverlay.style.display = 'none';
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        isGameOver = false;
+    }, 500);
+}
+
+    startBtn.onclick = () => {
+        const name = usernameInput.value.trim();
+        if (name) {
+            playSound('click');
+            login(name);
+        } else {
+            alert("Hãy nhập tên của bạn nhé!");
+        }
+    };
+
+   function saveScoreToCloud() {
+    const allData = JSON.parse(localStorage.getItem('fruit_players_data') || '{}');
+    
+    if (score > highScore) {
+        highScore = score;
+        document.getElementById('high-score').innerText = highScore;
+    }
+
+    // Lưu tất cả bao gồm cả nhiệm vụ
+    allData[currentPlayer] = {
+        total: totalScore,
+        best: highScore,
+        challengeStats: playerStats 
+    };
+    localStorage.setItem('fruit_players_data', JSON.stringify(allData));
+    updateChallengeProgress();
+}
+
+    // --- GAME ENGINE (Kế thừa từ code của bạn) ---
+    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
+    // --- THAY ĐỔI KÍCH THƯỚC TẠI ĐÂY ---
+const WIDTH = 500;   // Tăng từ 400 lên 500
+const HEIGHT = 700;  // Tăng từ 550 lên 700 (khung sẽ dài ra đáng kể)
+const DEADLINE = 100; // Tăng nhẹ deadline vì khung cao hơn
+    let score = 0;
+    let gameStartTime = null; // Để null để đánh dấu chưa bắt đầu đếm
+    let nextLevel = 0;
+    let isGameOver = false;
+
+    // Hệ thống Theme đa dạng
+const THEMES = {
+    fruit: [
+        { radius: 15, color: '#ffb3ba', score: 2, icon: '🍒' },
+        { radius: 22, color: '#ffdfba', score: 4, icon: '🍓' },
+        { radius: 30, color: '#ffffba', score: 8, icon: '🍇' },
+        { radius: 38, color: '#baffc9', score: 16, icon: '🍋' },
+        { radius: 48, color: '#bae1ff', score: 32, icon: '🍊' },
+        { radius: 60, color: '#a2d2ff', score: 64, icon: '🍎' },
+        { radius: 72, color: '#d0bdf4', score: 128, icon: '🍐' },
+        { radius: 85, color: '#f49ac2', score: 256, icon: '🍑' },
+        { radius: 100, color: '#ff85a2', score: 512, icon: '🍍' },
+        { radius: 120, color: '#ff5c8a', score: 1024, icon: '🍉' }
+    ],
+    animal: [
+        { radius: 15, color: '#e3f2fd', score: 2, icon: '🐥' },
+        { radius: 22, color: '#f3e5f5', score: 4, icon: '🐭' },
+        { radius: 30, color: '#fff3e0', score: 8, icon: '🐱' },
+        { radius: 38, color: '#e8f5e9', score: 16, icon: '🐶' },
+        { radius: 48, color: '#efebe9', score: 32, icon: '🐷' },
+        { radius: 60, color: '#fffde7', score: 64, icon: '🐻' },
+        { radius: 72, color: '#fce4ec', score: 128, icon: '🐼' },
+        { radius: 85, color: '#e0f2f1', score: 256, icon: '🦁' },
+        { radius: 100, color: '#ede7f6', score: 512, icon: '🐯' },
+        { radius: 120, color: '#fff9c4', score: 1024, icon: '🐘' }
+    ],
+    cosmetic: [
+        { radius: 15, color: '#f8bbd0', score: 2, icon: '💄' },
+        { radius: 22, color: '#e1bee7', score: 4, icon: '💅' },
+        { radius: 30, color: '#d1c4e9', score: 8, icon: '🧴' },
+        { radius: 38, color: '#bbdefb', score: 16, icon: '🎀' },
+        { radius: 48, color: '#c8e6c9', score: 32, icon: '🌸' },
+        { radius: 60, color: '#fff9c4', score: 64, icon: '💍' },
+        { radius: 72, color: '#ffccbc', score: 128, icon: '👜' },
+        { radius: 85, color: '#d7ccc8', score: 256, icon: '👒' },
+        { radius: 100, color: '#cfd8dc', score: 512, icon: '👗' },
+        { radius: 120, color: '#ff80ab', score: 1024, icon: '👑' }
+    ],
+    tech: [
+        { radius: 15, color: '#cfd8dc', score: 2, icon: '🖱️' },
+        { radius: 22, color: '#b0bec5', score: 4, icon: '🔌' },
+        { radius: 30, color: '#90a4ae', score: 8, icon: '🔋' },
+        { radius: 38, color: '#78909c', score: 16, icon: '🎧' },
+        { radius: 48, color: '#546e7a', score: 32, icon: '📱' },
+        { radius: 60, color: '#455a64', score: 64, icon: '📷' },
+        { radius: 72, color: '#37474f', score: 128, icon: '💻' },
+        { radius: 85, color: '#263238', score: 256, icon: '🖥️' },
+        { radius: 100, color: '#1a237e', score: 512, icon: '📡' },
+        { radius: 120, color: '#000000', score: 1024, icon: '🤖' }
+    ]
+};
+
+let currentTheme = 'fruit'; // Mặc định là trái cây
+let BALL_TYPES = THEMES[currentTheme]; // Gán lại để tương thích với code cũ của Henry
+
+    // Vẽ bảng tiến hóa
+    const chart = document.getElementById('evolution-chart');
+    BALL_TYPES.forEach((type, index) => {
+        const itemContainer = document.createElement('div');
+        itemContainer.style.display = 'flex';
+        itemContainer.style.flexDirection = 'column';
+        itemContainer.style.alignItems = 'center';
+
+        const circle = document.createElement('div');
+        circle.className = 'evo-item';
+        circle.style.backgroundColor = type.color;
+        circle.innerText = type.icon;
+        circle.style.fontSize = '18px';
+        
+        const label = document.createElement('div');
+        label.className = 'level-label';
+        label.innerText = `Lv.${index + 1}`;
+
+        itemContainer.appendChild(circle);
+        itemContainer.appendChild(label);
+        chart.appendChild(itemContainer);
+        if (index < BALL_TYPES.length - 1) {
+            const arrow = document.createElement('span');
+            arrow.style.color = '#ffccd9';
+            arrow.style.marginBottom = '15px';
+            arrow.innerHTML = '→';
+            chart.appendChild(arrow);
+        }
+    });
+
+    // Modal logic
+    const modal = document.getElementById("chart-modal");
+    document.getElementById("open-chart-btn").onclick = () => { playSound('click'); modal.style.display = "flex"; };
+    
+
+    // Matter Engine
+    const engine = Engine.create();
+
+// Tăng độ chính xác khi tính toán va chạm (mặc định là 6)
+engine.positionIterations = 10; 
+engine.velocityIterations = 10;
+    const render = Render.create({
+        element: document.getElementById('game-container'),
+        engine: engine,
+        options: { width: WIDTH, height: HEIGHT, wireframes: false, background: '#fff9fb' }
+    });
+
+// Mới: Dày 100px, đẩy tâm xuống để mặt trên vẫn ở vị trí cũ
+const ground = Bodies.rectangle(WIDTH/2, HEIGHT + 45, WIDTH, 100, { 
+    isStatic: true, 
+    render: { fillStyle: '#ffe1e9' } 
+});
+
+// Tương tự với tường trái/phải, tăng độ dày lên 100px để cầu không bị văng ra ngoài khi nổ
+const leftWall = Bodies.rectangle(-45, HEIGHT/2, 100, HEIGHT, { isStatic: true, render: { fillStyle: '#ffe1e9' } });
+const rightWall = Bodies.rectangle(WIDTH + 45, HEIGHT/2, 100, HEIGHT, { isStatic: true, render: { fillStyle: '#ffe1e9' } });
+    Composite.add(engine.world, [ground, leftWall, rightWall]);
+
+    Runner.run(Runner.create(), engine);
+    Render.run(render);
+
+    function updatePreview() {
+        const previewEl = document.getElementById('next-preview');
+        previewEl.style.backgroundColor = BALL_TYPES[nextLevel].color;
+        previewEl.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:20px;">${BALL_TYPES[nextLevel].icon}</div>`;
+        previewEl.style.transform = `scale(${0.4 + (nextLevel * 0.15)})`;
+    }
+
+    function createBall(x, y, typeIndex) {
+    const type = BALL_TYPES[typeIndex];
+    return Bodies.circle(x, y, type.radius, {
+        restitution: 0.4, 
+        friction: 0.1, 
+        label: "sphere",
+        plugin: { 
+            level: typeIndex, 
+            spawnTime: Date.now(), 
+            scale: 0,
+            isMerging: false // THÊM DÒNG NÀY: Để đánh dấu bóng đang xử lý
+        },
+        render: { fillStyle: type.color, strokeStyle: '#ffffff', lineWidth: 3 }
+    });
+}
+
+// --- BIẾN PHỤ TRỢ & QUẢN LÝ TƯƠNG TÁC ---
+let isTouching = false;
+let isDropping = false; 
+let currentPreviewX = WIDTH / 2;
+
+// Hàm lấy tọa độ X/Y chuẩn xác (Fix lỗi lệch tâm trên điện thoại)
+const getMousePos = (e) => {
+    const rect = render.canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+        x: (clientX - rect.left) * (WIDTH / rect.width),
+        y: (clientY - rect.top) * (HEIGHT / rect.height)
+    };
+};
+
+// Cập nhật vị trí bóng ma (chỉ khi không dùng skill)
+const updatePosition = (e) => {
+    if (isGameOver || activeSkill || loginOverlay.style.display !== 'none') return;
+    const pos = getMousePos(e);
+    const padding = 35; 
+    currentPreviewX = Math.max(padding, Math.min(WIDTH - padding, pos.x));
+};
+
+// --- HÀM XỬ LÝ KHI NGƯỜI CHƠI CHẠM XUỐNG ---
+const handleActionStart = (e) => {
+    if (isGameOver || loginOverlay.style.display !== 'none') return;
+
+    const pos = getMousePos(e);
+
+    // TRƯỜNG HỢP 1: Đang bật Đạo cụ (Upgrade/Delete)
+    if (activeSkill) {
+        if (e.type === 'touchstart') e.preventDefault(); // Ngăn trình duyệt cuộn trang
+        
+        const bodies = Composite.allBodies(engine.world);
+        const clickedBody = bodies.find(body => {
+            if (body.label !== "sphere") return false;
+            const dx = body.position.x - pos.x;
+            const dy = body.position.y - pos.y;
+            // Tăng vùng chạm lên +20px để ngón tay dễ bấm trúng trên mobile
+            return Math.sqrt(dx * dx + dy * dy) < body.circleRadius + 20;
+        });
+
+        if (clickedBody) {
+            // Gọi hàm thực thi kỹ năng (Hàm này Henry đã có ở dưới)
+            handleSkillAction(e); 
+        }
+        return; // Thoát luôn, không cho phép thả bóng khi đang dùng skill
+    }
+
+    // TRƯỜNG HỢP 2: Chơi bình thường (Thả bóng)
+    isTouching = true;
+    updatePosition(e);
+};
+
+// --- HÀM XỬ LÝ KHI BUÔNG TAY ---
+const handleActionEnd = (e) => {
+    if (!isTouching || isDropping || activeSkill) {
+        isTouching = false;
+        return;
+    }
+    
+    isTouching = false;
+    isDropping = true;
+
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const tutorial = document.getElementById('tutorial-text');
+    if (tutorial) tutorial.style.display = 'none';
+
+    // Tạo bóng tại vị trí cuối cùng ngón tay/chuột đứng lại
+    const ball = createBall(currentPreviewX, 50, nextLevel);
+    ball.plugin.spawnTime = Date.now();
+    Composite.add(engine.world, ball);
+
+    nextLevel = Math.floor(Math.random() * 3);
+    updatePreview();
+    playSound('click'); 
+    resetAFKTimer();
+    saveGameState();
+
+    setTimeout(() => { isDropping = false; }, 300);
+};
+
+// --- HỆ THỐNG XỬ LÝ TƯƠNG TÁC TỐI ƯU CHO MOBILE ---
+
+const getPointerPos = (e) => {
+    const rect = render.canvas.getBoundingClientRect();
+    // Lấy tọa độ từ touch hoặc mouse
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    return {
+        x: (clientX - rect.left) * (WIDTH / rect.width),
+        y: (clientY - rect.top) * (HEIGHT / rect.height)
+    };
+};
+
+const onPointerDown = (e) => {
+    if (isGameOver || loginOverlay.style.display !== 'none') return;
+    
+    // --- THÊM DÒNG NÀY ĐỂ ẨN HƯỚNG DẪN NGAY KHI CHẠM ---
+    const tutorial = document.getElementById('tutorial-text');
+    if (tutorial) tutorial.style.display = 'none';
+    // -------------------------------------------------
+    
+    resetAFKTimer();
+    const pos = getPointerPos(e);
+
+    // TRƯỜNG HỢP: Đang dùng Đạo cụ (Upgrade/Delete)
+    if (activeSkill) {
+        if (e.type === 'touchstart') e.preventDefault(); // Chặn cuộn trang khi đang target cầu
+        
+        const bodies = Composite.allBodies(engine.world);
+        const clickedBody = bodies.find(body => {
+            if (body.label !== "sphere") return false;
+            const dx = body.position.x - pos.x;
+            const dy = body.position.y - pos.y;
+            // Tăng vùng chạm lên +25px để ngón tay dễ bấm trúng trên mobile
+            return Math.sqrt(dx * dx + dy * dy) < body.circleRadius + 25;
+        });
+
+        if (clickedBody) {
+            // Thực thi skill ngay lập tức
+            executeSkillOnBody(clickedBody);
+        }
+        return; 
+    }
+
+    // TRƯỜNG HỢP: Chơi bình thường (Thả cầu)
+    isTouching = true;
+    currentPreviewX = Math.max(35, Math.min(WIDTH - 35, pos.x));
+};
+
+const onPointerMove = (e) => {
+    if (isTouching && !activeSkill) {
+        const pos = getPointerPos(e);
+        currentPreviewX = Math.max(35, Math.min(WIDTH - 35, pos.x));
+        if (e.type === 'touchmove') e.preventDefault(); 
+    }
+};
+
+const onPointerUp = (e) => {
+    if (!isTouching || isDropping || activeSkill) {
+        isTouching = false;
+        return;
+    }
+    
+    // SỬA TẠI ĐÂY: Kích hoạt thời gian ngay khi thả cầu
+    if (gameStartTime === null) {
+        gameStartTime = Date.now();
+    }
+
+    resetAFKTimer();
+    isTouching = false;
+    isDropping = true;
+
+    const ball = createBall(currentPreviewX, 50, nextLevel);
+    Composite.add(engine.world, ball);
+
+    nextLevel = Math.floor(Math.random() * 3);
+    updatePreview();
+    playSound('click'); 
+
+    setTimeout(() => { isDropping = false; }, 300);
+};
+
+// Gán sự kiện đồng bộ cho cả Mouse và Touch
+render.canvas.addEventListener('mousedown', onPointerDown);
+render.canvas.addEventListener('mousemove', onPointerMove);
+window.addEventListener('mouseup', onPointerUp);
+
+render.canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+render.canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+window.addEventListener('touchend', onPointerUp);
+// XÓA các dòng addEventListener cũ của handleSkillAction và handleActionStart ở dưới để tránh chạy lặp lại!
+// Collision Logic
+    // Logic va chạm đã được Fix lỗi nhảy điểm và đứng máy
+Events.on(engine, 'collisionStart', (event) => {
+    event.pairs.forEach((pair) => {
+        const { bodyA, bodyB } = pair;
+
+        // 1. Âm thanh va chạm tường/đất
+        if (bodyA.isStatic || bodyB.isStatic) {
+            if (bodyA.label === "sphere" || bodyB.label === "sphere") playSound('drop');
+            return;
+        }
+
+        // 2. Kiểm tra điều kiện hợp nhất
+        if (bodyA.label === "sphere" && bodyB.label === "sphere" && 
+            bodyA.plugin.level === bodyB.plugin.level && !isGameOver) {
+            
+            const lvl = bodyA.plugin.level;
+
+            if (lvl < BALL_TYPES.length - 1 && !bodyA.plugin.isMerging && !bodyB.plugin.isMerging) {
+                
+                bodyA.plugin.isMerging = true;
+                bodyB.plugin.isMerging = true;
+
+                playSound('merge');
+
+                const newX = (bodyA.position.x + bodyB.position.x) / 2;
+                const newY = (bodyA.position.y + bodyB.position.y) / 2;
+
+                const pointsEarned = BALL_TYPES[lvl].score; 
+                showFloatingScore(newX, newY, pointsEarned);
+
+                // --- QUAN TRỌNG: CẬP NHẬT SCORE TRƯỚC ---
+                score += pointsEarned; 
+                document.getElementById('score-board').innerText = score;
+
+                // Hiệu ứng scale kỷ lục
+                if (score > highScore) {
+                    highScore = score;
+                    const highScoreEl = document.getElementById('high-score');
+                    highScoreEl.innerText = highScore;
+                    highScoreEl.style.transform = 'scale(1.2)';
+                    setTimeout(() => highScoreEl.style.transform = 'scale(1)', 200);
+                }
+
+                Composite.remove(engine.world, [bodyA, bodyB]);
+
+                const newLvl = lvl + 1;
+                const newBall = createBall(newX, newY, newLvl);
+                Composite.add(engine.world, newBall);
+
+                // --- LIÊN KẾT NHIỆM VỤ THEO THEME (CẬP NHẬT MƯỢT MÀ) ---
+                if (playerStats && playerStats.quests) {
+                    const q = playerStats.quests[currentTheme]; 
+
+                    // A. Đếm số lần hợp nhất
+                    const mergeIds = { 
+                        fruit: ['f2', 'f6', 'f11'], 
+                        animal: ['a2', 'a6', 'a11'], 
+                        cosmetic: ['c2', 'c6', 'c11'], 
+                        tech: ['t2', 't6', 't11'] 
+                    };
+
+                    mergeIds[currentTheme].forEach(id => {
+                        if (q[id] && !q[id].claimed) {
+                            q[id].current++;
+                            checkQuestProgress(id);
+                        }
+                    });
+
+                    // B. Đếm cấp độ quả vừa tạo ra
+                    const levelMap = {
+                        5: { fruit: 'f4', animal: 'a4', cosmetic: 'c4', tech: 't4' },
+                        7: { fruit: 'f5', animal: 'a5', cosmetic: 'c5', tech: 't5' },
+                        9: { fruit: 'f8', animal: 'a8', cosmetic: 'c8', tech: 't8' }
+                    };
+
+                    if (levelMap[newLvl]) {
+                        const targetId = levelMap[newLvl][currentTheme];
+                        if (q[targetId] && !q[targetId].claimed) {
+                            q[targetId].current++;
+                            checkQuestProgress(targetId);
+                        }
+                    }
+                    
+                    // C. CẬP NHẬT KỶ LỤC GIA 50K (DÙNG SCORE MỚI NHẤT)
+                    // Logic này giúp khi Henry đổi phong cách, điểm vẫn được link sang mượt mà
+                    const perfIds = { fruit: 'f12', animal: 'a12', cosmetic: 'c12', tech: 't12' };
+                    const pId = perfIds[currentTheme];
+                    
+                    if (q[pId] && !q[pId].claimed) {
+                        const target = 50000; // Mốc cố định của Henry
+                        q[pId].current = Math.min(target, score); 
+                        if (q[pId].current === target) checkQuestProgress(pId);
+                    }
+
+                    saveChallengeData();
+                }
+
+                updateChallengeProgress(); // Cập nhật thử thách nạp tiền
+                saveGameState(); // Lưu trạng thái AFK
+            }
+        }
+    });
+});
+
+    // Drawing Icons
+    // Drawing Icons & Deadline
+Events.on(render, 'afterRender', () => {
+    const ctx = render.context;
+
+    // --- 1. VẼ VẠCH DEADLINE (CÓ HIỆU ỨNG PHÁT SÁNG) ---
+    ctx.save(); // Lưu trạng thái hiện tại (Quan trọng!)
+    ctx.beginPath();
+    ctx.setLineDash([8, 12]); // Nét đứt thưa hơn cho sang
+    ctx.moveTo(10, DEADLINE);
+    ctx.lineTo(WIDTH - 10, DEADLINE);
+    
+    if (typeof isNearDeadline !== 'undefined' && isNearDeadline) {
+        // Hiệu ứng "nhịp thở" (Breathing) mượt hơn chớp tắt đơn thuần
+        const alpha = 0.5 + 0.5 * Math.sin(Date.now() / 150); 
+        ctx.strokeStyle = `rgba(255, 0, 0, ${alpha})`;
+        ctx.lineWidth = 3 + alpha * 2;
+        
+        // Thêm chút hào quang đỏ rực cho nguy hiểm
+        ctx.shadowBlur = 15 * alpha;
+        ctx.shadowColor = "red";
+    } else {
+        ctx.strokeStyle = 'rgba(255, 204, 217, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 0;
+    }
+    
+    ctx.stroke();
+    ctx.restore(); // Khôi phục trạng thái cũ (Tự động reset setLineDash và shadow)
+
+    // --- 2. VẼ ICON TRÁI CÂY/LINH KIỆN ---
+    Composite.allBodies(engine.world).forEach(body => {
+        if (body.label === "sphere") {
+            const { x, y } = body.position;
+            
+            // Tăng tốc độ scale một chút cho mượt (0.1 -> 0.08)
+            if (body.plugin.scale < 1) body.plugin.scale += 0.08;
+            
+            const type = BALL_TYPES[body.plugin.level];
+            const fontSize = type.radius * body.plugin.scale * 1.2;
+            
+            // Ưu tiên font Emoji hệ thống để xuất link mobile hiện icon đẹp
+            ctx.font = `bold ${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = "#5d5d5d";
+            
+            // Vẽ Icon (cộng nhẹ y một chút để icon nằm giữa tâm quả hơn)
+            ctx.fillText(type.icon, x, y + (fontSize * 0.05));
+        }
+    });
+});
+
+   function gameOver() {
+    if (isGameOver) return;
+    isGameOver = true;
+    playSound('fail');
+    clearSavedGame();
+    
+    // --- 1. LƯU NHẬT KÝ VÁN CHƠI (GAME LOGS) ---
+    if (score > 0) {
+        if (!playerStats.gameLogs) playerStats.gameLogs = [];
+
+        const gameNumber = (playerStats.totalGamesPlayed || 0) + 1;
+        playerStats.totalGamesPlayed = gameNumber;
+
+        // --- SỬA TẠI ĐÂY: Tính toán thời gian chơi thực tế ---
+        // Nếu game đang chạy thì lấy Giờ hiện tại - Bắt đầu
+        // Nếu game đang tạm dừng (vừa resume) thì lấy số thời gian cũ
+        const finalDurationMs = gameStartTime ? (Date.now() - gameStartTime) : (window.oldPlayedTime || 0);
+
+        playerStats.gameLogs.unshift({
+            no: gameNumber,
+            // Sử dụng hàm msToTime để đổi con số miligiây thành "3p 15s"
+            time: msToTime(finalDurationMs), 
+            theme: currentTheme === 'fruit' ? '🍓' : (currentTheme === 'animal' ? '🐶' : (currentTheme === 'cosmetic' ? '💄' : '🤖')),
+            score: score
+        });
+
+        if (playerStats.gameLogs.length > 100) {
+            playerStats.gameLogs.pop();
+        }
+    }
+
+    // --- 2. LIÊN KẾT NHIỆM VỤ THEO THEME (Giữ nguyên logic của Henry) ---
+    if (playerStats && playerStats.quests) {
+        const q = playerStats.quests[currentTheme];
+        const updatedTotal = totalScore + score;
+
+        const playIds = { fruit: ['f1', 'f9'], animal: ['a1', 'a9'], cosmetic: ['c1', 'c9'], tech: ['t1', 't9'] };
+        const [idShort, idLong] = playIds[currentTheme];
+
+        if (q[idShort]) { q[idShort].current++; checkQuestProgress(idShort); }
+        if (q[idLong]) { q[idLong].current++; checkQuestProgress(idLong); }
+
+        const perfectIds = { fruit: 'f12', animal: 'a12', cosmetic: 'c12', tech: 't12' };
+        const pId = perfectIds[currentTheme];
+        
+        if (q[pId] && score >= QUEST_THEMES[currentTheme].find(x => x.id === pId).target) {
+            q[pId].current = QUEST_THEMES[currentTheme].find(x => x.id === pId).target;
+            checkQuestProgress(pId);
+        }
+
+        const scoreIds = { 
+            fruit: ['f3', 'f7', 'f10'], 
+            animal: ['a3', 'a7', 'a10'], 
+            cosmetic: ['c3', 'c7', 'c10'], 
+            tech: ['t3', 't7', 't10'] 
+        };
+
+        scoreIds[currentTheme].forEach(id => {
+            if (q[id]) {
+                const target = QUEST_THEMES[currentTheme].find(x => x.id === id).target;
+                q[id].current = Math.min(target, updatedTotal);
+                checkQuestProgress(id);
+            }
+        });
+        
+        saveChallengeData(); 
+    }
+    
+    // --- 3. CẬP NHẬT ĐIỂM TỔNG VÀ HIỆN POPUP ---
+    totalScore += score; 
+    saveScoreToCloud(); 
+    
+    totalScoreEl.innerText = totalScore.toLocaleString(); 
+    document.getElementById('final-score-display').innerText = score.toLocaleString();
+    document.getElementById('game-over-modal').style.display = 'flex';
+}
+
+function executeSkillOnBody(body) {
+    const currentLvl = body.plugin.level;
+    const { x, y } = body.position;
+
+    // --- TRƯỜNG HỢP 1: THẺ VẠN NĂNG (NÂNG CẤP) ---
+    if (activeSkill === 'upgrade') {
+        if (currentLvl < BALL_TYPES.length - 1) {
+            const newLvl = currentLvl + 1;
+            Composite.remove(engine.world, body);
+            
+            const upgradedBall = createBall(x, y, newLvl);
+            upgradedBall.plugin.scale = 1; // Hiện ra ngay lập tức
+            Composite.add(engine.world, upgradedBall);
+
+            // Cập nhật nhiệm vụ & Trừ lượt dùng
+            updateQuestAfterAction(newLvl);
+            useSkill('upgrade'); 
+            showFloatingScore(x, y, "UPGRADE! ✨");
+        } else {
+            alert("Quả này đã đạt cấp tối đa rồi cư dân ơi! 🍉");
+            return; // Thoát ra, không trừ đạo cụ
+        }
+    } 
+    // --- TRƯỜNG HỢP 2: THẺ XÓA CẦU (XÓA CÙNG LOẠI) ---
+    else if (activeSkill === 'delete') {
+        const allBodies = Composite.allBodies(engine.world);
+        let count = 0;
+        allBodies.forEach(b => {
+            if (b.label === "sphere" && b.plugin.level === currentLvl) {
+                showFloatingScore(b.position.x, b.position.y, "BOOM! 💣");
+                Composite.remove(engine.world, b);
+                count++;
+            }
+        });
+        
+        if (count > 0) {
+            useSkill('delete'); // Chỉ trừ lượt nếu có quả bị xóa
+        }
+    }
+
+    // Tắt chế độ dùng skill sau khi thực hiện xong
+    activeSkill = null;
+    if (document.getElementById('skill-hint')) {
+        document.getElementById('skill-hint').style.display = 'none';
+    }
+    document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
+}
+
+function updateQuestAfterAction(newLvl) {
+    if (playerStats && playerStats.quests) {
+        const q = playerStats.quests[currentTheme];
+        const levelMap = {
+            5: { fruit: 'f4', animal: 'a4', cosmetic: 'c4', tech: 't4' }, // Cấp 6
+            7: { fruit: 'f5', animal: 'a5', cosmetic: 'c5', tech: 't5' }, // Cấp 8
+            9: { fruit: 'f8', animal: 'a8', cosmetic: 'c8', tech: 't8' }  // Cấp 10
+        };
+
+        if (levelMap[newLvl]) {
+            const targetId = levelMap[newLvl][currentTheme];
+            if (q[targetId]) {
+                q[targetId].current++;
+                checkQuestProgress(targetId);
+            }
+        }
+        saveChallengeData();
+    }
+}
+
+
+// Hàm xử lý khi ấn nút "Chơi lại từ đầu"
+function handleRetry() {
+    playSound('click');
+    document.getElementById('game-over-modal').style.display = 'none';
+    resetGame();
+    // Bắt đầu lại AFK timer
+    resetAFKTimer();
+}
+
+    function resetGame() {
+    // 1. Dọn dẹp tất cả quả cầu trên màn hình
+    Composite.allBodies(engine.world).forEach(body => {
+        if (body.label === "sphere") Composite.remove(engine.world, body);
+    });
+
+    // 2. Reset trạng thái ván chơi
+    score = 0;
+    document.getElementById('score-board').innerText = "0";
+    isGameOver = false;
+
+    // --- SỬA TẠI ĐÂY: Reset về null để chờ cú chạm đầu tiên mới đếm giờ ---
+    gameStartTime = null; 
+    // ------------------------------------------------------------------
+
+    // 3. Hiển thị lại hướng dẫn cho ván mới
+    const tutorial = document.getElementById('tutorial-text');
+    if (tutorial) tutorial.style.display = 'flex'; // Đổi từ 'none' thành 'flex' hoặc 'block'
+
+    // --- RESET TOÀN BỘ NHIỆM VỤ 50K CỦA CẢ 4 PHONG CÁCH ---
+    if (playerStats && playerStats.quests) {
+        const allPerfectIds = { 
+            fruit: 'f12', 
+            animal: 'a12', 
+            cosmetic: 'c12', 
+            tech: 't12' 
+        };
+
+        Object.keys(allPerfectIds).forEach(theme => {
+            const pId = allPerfectIds[theme];
+            const q = playerStats.quests[theme];
+            
+            if (q && q[pId] && !q[pId].claimed) {
+                q[pId].current = 0;
+            }
+        });
+
+        saveChallengeData();
+        
+        if (document.getElementById('quest-modal').style.display === 'flex') {
+            renderQuests();
+        }
+    }
+}
+
+  Events.on(engine, 'afterUpdate', () => {
+    // 1. Thoát sớm nếu không cần kiểm tra
+    if (isGameOver || loginOverlay.style.display !== 'none') {
+        isNearDeadline = false;
+        return;
+    }
+
+    const bodies = Composite.allBodies(engine.world);
+    const now = Date.now();
+    let warningFound = false;
+
+    for (let i = 0; i < bodies.length; i++) {
+        const body = bodies[i];
+
+        // Chỉ kiểm tra vật thể là bóng
+        if (body.label === "sphere") {
+            const ballTop = body.position.y - body.circleRadius;
+            
+            // Bỏ qua bóng mới sinh (tránh lỗi vừa thả đã check deadline)
+            if (now - (body.plugin.spawnTime || 0) < 1500) continue;
+
+            // Kiểm tra vận tốc cực thấp để xác định bóng đã "nằm yên" hay chưa
+            const isSettled = Math.abs(body.velocity.y) < 0.1;
+
+            // 2. Logic Xử lý THUA CUỘC (Vượt vạch DEADLINE)
+            if (ballTop < DEADLINE) {
+                if (isSettled) {
+                    // Khởi tạo thời gian bắt đầu chạm vạch nếu chưa có
+                    if (!body.plugin.onDeadlineTime) {
+                        body.plugin.onDeadlineTime = now;
+                    } 
+                    // Nếu đã nằm trên vạch quá 1 giây
+                    else if (now - body.plugin.onDeadlineTime > 1000) {
+                        gameOver();
+                        return; // Thoát hẳn vòng lặp và hàm
+                    }
+                }
+            } else {
+                // Quan trọng: Reset lại thời gian nếu bóng rơi xuống dưới vạch
+                body.plugin.onDeadlineTime = null;
+            }
+
+            // 3. Logic CẢNH BÁO (Gần vạch - cách 60px)
+            // Hiển thị hiệu ứng rung lắc hoặc đổi màu vạch nếu bóng gần chạm
+            if (ballTop < DEADLINE + 60 && isSettled) {
+                warningFound = true;
+            }
+        }
+    }
+
+    // Cập nhật trạng thái cảnh báo sau khi quét hết các bóng
+    isNearDeadline = warningFound;
+});
+
+    // Audio System
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+    if (isMuted) return; // Nếu đang tắt âm thì không làm gì cả
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        if (type === 'click') { osc.frequency.setValueAtTime(800, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(); osc.stop(now + 0.1); }
+        if (type === 'drop') { osc.frequency.setValueAtTime(150, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(); osc.stop(now + 0.2); }
+        if (type === 'merge') { osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(); osc.stop(now + 0.1); }
+        if (type === 'fail') { osc.type = 'sawtooth'; osc.frequency.linearRampToValueAtTime(50, now + 0.5); gain.gain.linearRampToValueAtTime(0.01, now + 0.5); osc.start(); osc.stop(now + 0.5); }
+    }
+
+    // Khởi tạo
+    initPlayer();
+    updatePreview();
+
+const logoutModal = document.getElementById('logout-modal');
+
+// Mở Popup xác nhận
+function logout() {
+    playSound('click');
+    logoutModal.style.display = 'flex';
+}
+
+// Đóng Popup xác nhận và quay lại Cài đặt nếu chọn "Ở lại"
+function closeLogoutModal() {
+    playSound('click');
+    // Ẩn trực tiếp, không dùng closeModal(id) để tránh tiếng click thứ 2
+    document.getElementById('logout-modal').style.display = 'none';
+    
+    setTimeout(() => {
+        // Mở lại cài đặt, hàm openModal cũng có playSound nên ta ẩn đi để tránh chồng âm
+        const settings = document.getElementById('settings-modal');
+        if (settings) settings.style.display = 'flex';
+    }, 50);
+}
+
+// Xác nhận đăng xuất thật sự - Bản sửa lỗi ẩn toàn bộ Modal
+function confirmLogout() {
+    playSound('click');
+    
+    // 1. QUAN TRỌNG: Quét và ẩn TẤT CẢ các modal đang mở (bao gồm cả settings-modal)
+    document.querySelectorAll('.modal').forEach(m => {
+        m.style.display = 'none';
+    });
+
+    // 2. Ẩn nút âm thanh ngoài màn hình chính
+    const soundBtn = document.getElementById('sound-toggle');
+    if (soundBtn) soundBtn.style.display = 'none';
+
+    // 3. Ghi lại nhật ký cư dân trước khi xóa tên
+    if (currentPlayer) {
+        recordActivity(currentPlayer); 
+    }
+    
+    // 4. Xóa phiên làm việc hiện tại
+    localStorage.removeItem('fruit_current_session');
+    
+    // 5. Hiện lại màn hình đăng nhập với hiệu ứng mượt mà
+    loginOverlay.style.display = 'flex';
+    setTimeout(() => {
+        loginOverlay.style.opacity = '1';
+        
+        // Cập nhật lại danh sách nhật ký nếu đang mở
+        const historyContainer = document.getElementById('history-container');
+        if (historyContainer && historyContainer.style.display !== 'none') {
+            // Henry có thể gọi trực tiếp hàm vẽ lại history ở đây nếu cần
+        }
+    }, 10);
+    
+    // 6. Dọn dẹp chiến trường
+    resetGame();
+    usernameInput.value = "";
+    currentPlayer = ""; // Xóa tên trong bộ nhớ tạm
+    
+    // 7. Reset hướng dẫn thả cầu
+    const tutorial = document.getElementById('tutorial-text');
+    if (tutorial) tutorial.style.display = 'flex';
+}
+
+// --- HÀM LẤY THỜI GIAN HIỆN TẠI ---
+function getTimeString() {
+    const now = new Date();
+    return now.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+}
+
+// --- GHI NHẬT KÝ ---
+function recordActivity(name) {
+    if (!name) return;
+    let history = JSON.parse(localStorage.getItem('fruit_resident_history') || '[]');
+    
+    // KIỂM TRA MẠNH: Nếu dữ liệu cũ không phải Object có thuộc tính 'name', xóa sạch để làm lại
+    if (!Array.isArray(history) || (history.length > 0 && typeof history[0] !== 'object') || (history.length > 0 && !history[0].name)) {
+        history = [];
+    }
+
+    const existingIndex = history.findIndex(item => item.name === name);
+    let joinDate;
+
+    if (existingIndex > -1) {
+        joinDate = history[existingIndex].date;
+        history.splice(existingIndex, 1);
+    } else {
+        joinDate = getTimeString();
+    }
+
+    history.unshift({ name: name, date: joinDate });
+    if (history.length > 100) history.pop();
+
+    localStorage.setItem('fruit_resident_history', JSON.stringify(history));
+}
+
+// --- HIỂN THỊ NHẬT KÝ ---
+function openHistory() {
+    playSound('click');
+    const modal = document.getElementById('history-modal');
+    const tableBody = document.getElementById('history-table-body');
+    let history = JSON.parse(localStorage.getItem('fruit_resident_history') || '[]');
+
+    // Lọc bỏ những phần tử bị lỗi undefined
+    history = history.filter(item => item && item.name);
+
+    if (history.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="2" style="padding: 30px; text-align: center; color: #bbb; font-style: italic;">Chưa có cư dân tham gia ✨</td></tr>`;
+    } else {
+        tableBody.innerHTML = history.map(item => `
+            <tr style="border-bottom: 1px solid #fff5f8;">
+                <td style="padding: 12px; text-align: center; color: var(--text-color); font-weight: bold;">
+                    ${item.name || "Ẩn danh"}
+                </td>
+                <td style="padding: 12px; text-align: center; color: #aaa; font-size: 11px;">
+                    ${item.date || "Không rõ"}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // SỬA TẠI ĐÂY: Dùng 'flex' để popup nhảy vào giữa màn hình nhờ CSS Flexbox
+    modal.style.display = 'flex'; 
+}
+
+function closeHistory() {
+    document.getElementById('history-modal').style.display = 'none';
+}
+
+function saveGameState() {
+    if (isGameOver || !currentPlayer) return;
+    
+    // 1. Tính toán tổng thời gian chính xác tại thời điểm nhấn lưu/tắt trang
+    let currentSessionMs = 0;
+    if (gameStartTime !== null) {
+        currentSessionMs = Date.now() - gameStartTime;
+    }
+    let totalPlayedMs = (window.oldPlayedTime || 0) + currentSessionMs;
+
+    const balls = Composite.allBodies(engine.world)
+        .filter(body => body.label === "sphere")
+        .map(body => ({
+            x: body.position.x,
+            y: body.position.y,
+            lvl: body.plugin.level
+        }));
+
+    const state = {
+        score: score,
+        balls: balls,
+        nextLevel: nextLevel,
+        player: currentPlayer,
+        playedTimeMs: totalPlayedMs // Lưu con số tổng cộng dồn mới nhất
+    };
+    
+    localStorage.setItem('fruit_saved_game', JSON.stringify(state));
+}
+
+function clearSavedGame() {
+    localStorage.removeItem('fruit_saved_game');
+}
+
+function checkResumeGame() {
+    const saved = JSON.parse(localStorage.getItem('fruit_saved_game'));
+    if (saved && saved.player === currentPlayer && saved.balls.length > 0) {
+        document.getElementById('resume-msg').innerHTML = `Tớ thấy cậu còn một ván chơi dở với <b>${saved.score}</b> điểm. Cậu muốn tiếp tục hay chơi ván mới?`;
+        document.getElementById('resume-modal').style.display = 'flex';
+        isGameOver = true; // Tạm dừng tương tác
+    }
+}
+
+function handleResumeChoice(continueGame) {
+    const saved = JSON.parse(localStorage.getItem('fruit_saved_game'));
+    document.getElementById('resume-modal').style.display = 'none';
+    
+    if (continueGame && saved) {
+        // --- TRƯỜNG HỢP: CHƠI TIẾP ---
+        score = saved.score;
+        nextLevel = saved.nextLevel;
+        document.getElementById('score-board').innerText = score;
+        updatePreview();
+
+        const currentBodies = Composite.allBodies(engine.world);
+        currentBodies.forEach(body => {
+            if (body.label === "sphere") Composite.remove(engine.world, body);
+        });
+
+        saved.balls.forEach(b => {
+            const ball = createBall(b.x, b.y, b.lvl);
+            ball.plugin.scale = 1; 
+            Composite.add(engine.world, ball);
+        });
+        
+        updateChallengeProgress(); 
+        
+        // QUAN TRỌNG: Khôi phục lại số miligiây đã chơi tích lũy từ trước
+        window.oldPlayedTime = saved.playedTimeMs || 0; 
+        gameStartTime = null; // Đợi người chơi thả cầu mới bắt đầu đếm tiếp
+        
+        isGameOver = false;
+        playSound('merge'); 
+    } else {
+        // --- TRƯỜNG HỢP: CHỌN VÁN MỚI (CHỐT SỔ VÁN CŨ) ---
+        if (saved && saved.score > 0) {
+            // Lấy thời gian tích lũy của ván cũ vừa bị hủy
+            let finalDuration = saved.playedTimeMs || 0;
+            
+            if (!playerStats.gameLogs) playerStats.gameLogs = [];
+            
+            // Tăng số ván đã chơi
+            const gameNumber = (playerStats.totalGamesPlayed || 0) + 1;
+            playerStats.totalGamesPlayed = gameNumber;
+
+            // Đẩy vào nhật ký hành trình
+            playerStats.gameLogs.unshift({
+                no: gameNumber,
+                time: msToTime(finalDuration), 
+                theme: currentTheme === 'fruit' ? '🍓' : (currentTheme === 'animal' ? '🐶' : (currentTheme === 'cosmetic' ? '💄' : '🤖')),
+                score: saved.score
+            });
+
+            if (playerStats.gameLogs.length > 100) playerStats.gameLogs.pop();
+            
+            // Cộng điểm vào tổng vĩnh viễn (vì ván này coi như đã kết thúc)
+            totalScore += saved.score;
+            saveScoreToCloud();
+        }
+
+        // Reset mọi thứ về 0 cho ván mới
+        resetGame(); 
+        gameStartTime = null;
+        window.oldPlayedTime = 0;
+        clearSavedGame();
+        isGameOver = false; 
+    }
+    resetAFKTimer();
+}
+
+let afkCountdownInterval; // Quản lý vòng lặp đếm ngược 60s
+
+function resetAFKTimer() {
+    clearTimeout(afkTimer);
+    clearInterval(afkCountdownInterval); // Quan trọng: Dừng đếm ngược nếu người chơi đã chạm tay vào
+    
+    // 1. Tắt tất cả cảnh báo khi Henry chạm vào màn hình
+    isAfkWarning = false;
+    const timerBox = document.getElementById('game-timer-floating');
+    const warningText = document.getElementById('afk-warning-text');
+    const countdownBox = document.getElementById('afk-countdown-box'); // Popup đếm ngược mới
+    
+    if (timerBox) timerBox.classList.remove('timer-warning-active');
+    if (warningText) warningText.style.display = 'none';
+    if (countdownBox) countdownBox.style.display = 'none'; // Ẩn popup đếm ngược
+
+    // 2. Thiết lập lại bộ đếm AFK
+    if (!isGameOver && loginOverlay.style.display === 'none') {
+        
+        // MỐC 1: Sau 4 phút, hiện cảnh báo nhẹ (Dòng chữ và nhấp nháy đồng hồ)
+        afkTimer = setTimeout(() => {
+            if (!isGameOver && loginOverlay.style.display === 'none') {
+                isAfkWarning = true;
+                if (timerBox) timerBox.classList.add('timer-warning-active');
+                if (warningText) warningText.style.display = 'block';
+                
+                // MỐC 2: Sau thêm một chút (ví dụ 5 giây sau khi hiện chữ), hiện Popup đếm ngược 60s
+                afkTimer = setTimeout(() => {
+                    startAfkCountdown(); // Gọi hàm đếm ngược
+                }, 5000); 
+            }
+        }, 4 * 60 * 1000); 
+    }
+}
+
+function startAfkCountdown() {
+    const countdownBox = document.getElementById('afk-countdown-box');
+    const timerDisplay = document.getElementById('afk-timer-circle'); // Phần tử hiện số 60
+    
+    let timeLeft = 60; // Bắt đầu từ 60 giây
+    
+    if (countdownBox) {
+        countdownBox.style.display = 'block';
+        timerDisplay.innerText = timeLeft;
+    }
+    
+    // Phát âm thanh báo động nhẹ
+    playSound('click');
+
+    // Chạy vòng lặp mỗi 1 giây
+    afkCountdownInterval = setInterval(() => {
+        timeLeft--;
+        if (timerDisplay) timerDisplay.innerText = timeLeft;
+
+        // Nếu hết 1 phút mà không chạm
+        if (timeLeft <= 0) {
+            clearInterval(afkCountdownInterval);
+            saveGameState(); // Lưu game
+            if (countdownBox) countdownBox.style.display = 'none';
+            checkResumeGame(); // Hiện modal treo máy
+        }
+        
+        // Hiệu ứng rung khi còn dưới 10 giây (tùy chọn)
+        if (timeLeft <= 10) {
+            countdownBox.classList.add('afk-danger'); 
+            playSound('drop'); // Tiếng tíc tắc
+        }
+    }, 1000);
+}
+
+window.onbeforeunload = () => {
+    if (!isGameOver && score > 0) saveGameState();
+};
+
+function showFloatingScore(x, y, points) {
+    const gameWrapper = document.getElementById('game-wrapper');
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
+
+    const scoreEl = document.createElement('div');
+    scoreEl.className = 'floating-score';
+    scoreEl.innerText = `+${points}`;
+    
+    // Tính toán tỉ lệ thực tế giữa Canvas và hiển thị
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width / WIDTH;
+    const scaleY = rect.height / HEIGHT;
+
+    // Đặt vị trí dựa trên tỉ lệ thực tế
+    scoreEl.style.left = `${x * scaleX}px`;
+    scoreEl.style.top = `${y * scaleY}px`;
+    
+    gameWrapper.appendChild(scoreEl);
+    
+    setTimeout(() => {
+        scoreEl.remove();
+    }, 800);
+}
+
+function saveScoreToCloud() {
+    const allData = JSON.parse(localStorage.getItem('fruit_players_data') || '{}');
+    
+    // Cập nhật kỷ lục nếu có
+    if (score > highScore) {
+        highScore = score;
+        document.getElementById('high-score').innerText = highScore;
+    }
+
+    // Lưu trữ vĩnh viễn cả điểm tổng và kỷ lục
+    allData[currentPlayer] = {
+        total: totalScore,
+        best: highScore,
+        challengeStats: playerStats // Lưu luôn cả trạng thái thử thách ở đây
+    };
+    localStorage.setItem('fruit_players_data', JSON.stringify(allData));
+    
+    // Sau khi lưu xong, cập nhật ngay thanh tiến độ thử thách
+    updateChallengeProgress();
+}
+
+// Cấu hình các mốc
+const MILESTONES = [
+    { id: 1, target: 200000, reward: 5000, fee: 0 },
+    { id: 2, target: 250000, reward: 10000, fee: 0 },
+    { id: 3, target: 400000, reward: 15000, fee: 5000 },
+    { id: 4, target: 600000, reward: 20000, fee: 10000 },
+    { id: 5, target: 1000000, reward: 25000, fee: 15000 }
+];
+
+
+// Cập nhật tiến độ thử thách CHỈ dựa trên Điểm Tổng (vĩnh viễn)
+function updateChallengeProgress() {
+    if (!playerStats || !playerStats.challenges || !currentPlayer) return;
+
+    const currentTotal = totalScore; 
+
+    MILESTONES.forEach(m => {
+        let state = playerStats.challenges[m.id];
+        
+        if (state.unlocked && !state.completed) {
+            // CÔNG THỨC MỚI: Chỉ tính điểm phát sinh sau khi mở khóa
+            let progressSinceUnlock = currentTotal - (state.startPoint || 0);
+            
+            // Đảm bảo điểm không bị âm (đề phòng lỗi dữ liệu)
+            state.currentProgress = Math.max(0, progressSinceUnlock);
+            
+            // Khống chế mốc tối đa
+            if (state.currentProgress > m.target) {
+                state.currentProgress = m.target;
+            }
+        }
+    });
+    
+    saveChallengeData();
+
+    if (document.getElementById('challenge-modal').style.display === 'flex') {
+        renderChallenges();
+    }
+}
+
+function openChallengeModal() {
+    playSound('click');
+    updateChallengeProgress(); // Cập nhật lại một lần nữa cho chắc chắn
+    renderChallenges();
+    document.getElementById('challenge-modal').style.display = 'flex';
+    updateBalanceUI();
+}
+
+function renderChallenges() {
+    const list = document.getElementById('challenge-list');
+    list.innerHTML = '';
+    
+    MILESTONES.forEach(m => {
+        const state = playerStats.challenges[m.id];
+        const item = document.createElement('div');
+        item.className = 'challenge-item';
+        
+        // TÍNH TOÁN % CHÍNH XÁC: (Tiến độ / Mục tiêu) * 100
+        let percent = Math.floor((state.currentProgress / m.target) * 100);
+        if (percent > 100) percent = 100; // Đảm bảo không hiện 101%
+        
+        let statusBtn = '';
+        if (!state.unlocked) {
+            statusBtn = `<button class="btn-unlock" onclick="unlockChallenge(${m.id}, ${m.fee})">Mở khóa (${m.fee}đ)</button>`;
+        } else if (state.completed) {
+            statusBtn = `<button class="btn-locked" disabled style="background:#e0e0e0; color:#999;">Đã nhận ✅</button>`;
+        } else if (state.currentProgress >= m.target) {
+            // Nếu đã đủ 100% thì hiện nút Nhận ngay
+            statusBtn = `<button class="btn-claim" onclick="claimReward(${m.id}, ${m.reward})">NHẬN NGAY</button>`;
+        } else {
+            // Hiển thị % tiến độ thực tế
+            statusBtn = `<div style="font-size:12px; color:#ff85a2; font-weight:900; background:#fff0f5; padding:5px 10px; border-radius:10px; border:1px dashed var(--soft-pink);">${percent}%</div>`;
+        }
+
+        item.innerHTML = `
+            <div class="challenge-info">
+                <div class="challenge-title">Mốc ${m.id}: ${m.target.toLocaleString()} điểm</div>
+                <div class="challenge-desc">Tích lũy: ${state.currentProgress.toLocaleString()} / ${m.target.toLocaleString()}</div>
+                <div class="reward-tag">Thưởng: ${m.reward.toLocaleString()}đ</div>
+            </div>
+            <div style="text-align: right; min-width: 80px;">
+                ${statusBtn}
+            </div>
+        `;
+        list.appendChild(item);
+    });
+}
+
+function unlockChallenge(id, fee) {
+    if (playerStats.balance >= fee) {
+        playerStats.balance -= fee;
+        // Đánh dấu đã mở khóa
+        playerStats.challenges[id].unlocked = true;
+        // QUAN TRỌNG: Ghi lại điểm tổng tại thời điểm này
+        // Điểm tích lũy sau này = Điểm tổng hiện tại - startPoint
+        playerStats.challenges[id].startPoint = totalScore; 
+        // Reset tiến độ hiển thị về 0 ngay khi mở
+        playerStats.challenges[id].currentProgress = 0;
+
+        saveChallengeData();
+        renderChallenges();
+        updateBalanceUI();
+        playSound('merge');
+    } else {
+        alert("Số dư không đủ rồi, nạp thêm nhé!");
+    }
+}
+
+function claimReward(id, reward) {
+    playSound('merge');
+    playerStats.balance += reward;
+    playerStats.challenges[id].completed = true;
+    saveChallengeData();
+    renderChallenges();
+    updateBalanceUI();
+    
+    showSuccess("Nhận Quà Thành Công!", `🎉 Chúc mừng cư dân! Cậu đã nhận được hộp quà trị giá ${reward.toLocaleString()}đ vào túi! ✨`, "🎁");
+}
+
+let pendingRechargeAmount = 0; // Biến tạm lưu số tiền chờ nạp
+
+// 1. Hàm nạp nhanh (Thay đổi để hiện popup thay vì nạp luôn)
+function recharge(amount) {
+    playSound('click');
+    pendingRechargeAmount = amount;
+    document.getElementById('pending-amount').innerText = amount.toLocaleString() + "đ";
+    document.getElementById('confirm-recharge-modal').style.display = 'flex';
+}
+
+// 2. Hàm nạp tùy chọn (Cũng hiện popup)
+function rechargeCustom() {
+    const input = document.getElementById('custom-amount');
+    const amount = parseInt(input.value);
+
+    if (isNaN(amount) || amount < 1000) {
+        alert("Cư dân ơi, số tiền nạp tối thiểu là 1.000đ nhé! ✨");
+        return;
+    }
+
+    playSound('click');
+    pendingRechargeAmount = amount;
+    document.getElementById('pending-amount').innerText = amount.toLocaleString() + "đ";
+    document.getElementById('confirm-recharge-modal').style.display = 'flex';
+    
+    input.value = ""; // Xóa ô nhập
+}
+
+// 3. Hàm thực thi nạp THẬT SỰ (Khi ấn Chắc chắn)
+function executeRecharge() {
+    playSound('merge'); 
+    playerStats.balance += pendingRechargeAmount;
+
+    if (!playerStats.rechargeHistory) playerStats.rechargeHistory = [];
+    playerStats.rechargeHistory.unshift({
+        amount: pendingRechargeAmount,
+        time: getTimeString(),
+        type: 'Nạp tiền'
+    });
+
+    if (playerStats.rechargeHistory.length > 50) playerStats.rechargeHistory.pop();
+
+    saveChallengeData();
+    updateBalanceUI();
+    
+    closeModal('confirm-recharge-modal');
+    closeModal('recharge-modal');
+    
+    showSuccess("Nạp Xu Thành Công!", `🌸 Cảm ơn cư dân nhé! +${pendingRechargeAmount.toLocaleString()}đ đã được nạp lấp lánh vào tài khoản.`, "💖");
+    pendingRechargeAmount = 0; 
+}
+
+function updateBalanceUI() {
+    const balanceEl = document.getElementById('user-balance');
+    if (balanceEl) {
+        balanceEl.innerText = Number(playerStats.balance).toLocaleString();
+    }
+}
+
+function saveChallengeData() {
+    const allData = JSON.parse(localStorage.getItem('fruit_players_data') || '{}');
+    if (!allData[currentPlayer]) allData[currentPlayer] = {};
+    allData[currentPlayer].challengeStats = playerStats;
+    localStorage.setItem('fruit_players_data', JSON.stringify(allData));
+}
+
+// Hàm đóng popup chung cho toàn bộ game
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.style.display = 'none';
+        playSound('click'); // Thêm âm thanh cho sinh động
+    }
+}
+function renderRechargeHistory() {
+    const historyList = document.getElementById('recharge-history-list');
+    if (!historyList) return;
+
+    if (!playerStats.rechargeHistory || playerStats.rechargeHistory.length === 0) {
+        historyList.innerHTML = `<p style="color: #ccc; text-align: center; font-style: italic;">Chưa có giao dịch nào ✨</p>`;
+        return;
+    }
+
+    historyList.innerHTML = playerStats.rechargeHistory.map(item => `
+        <div style="background: white; padding: 6px 10px; border-radius: 8px; margin-bottom: 5px; border: 1px solid #fff0f5; display: flex; justify-content: space-between;">
+            <span style="color: #4CAF50; font-weight: bold;">+${item.amount.toLocaleString()}đ</span>
+            <span style="color: #aaa; font-size: 9px;">${item.time}</span>
+        </div>
+    `).join('');
+}
+
+// Sửa hàm mở nạp tiền để nó vẽ lại lịch sử mỗi khi mở
+function openRecharge() { 
+    playSound('click');
+    renderRechargeHistory(); // Vẽ lại lịch sử của tài khoản này
+    document.getElementById('recharge-modal').style.display = 'flex'; 
+}
+
+// Click ra ngoài vùng trắng của modal để đóng
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = "none";
+        playSound('click');
+    }
+}
+
+let activeSkill = null; // Trạng thái kỹ năng đang chọn
+
+function updateSkillUI() {
+    // Đảm bảo playerStats và skills tồn tại
+    if (!playerStats) return;
+    if (!playerStats.skills) playerStats.skills = { upgrade: 3, shuffle: 3, delete: 2 };
+    
+    document.getElementById('count-upgrade').innerText = playerStats.skills.upgrade;
+    document.getElementById('count-shuffle').innerText = playerStats.skills.shuffle;
+    document.getElementById('count-delete').innerText = playerStats.skills.delete;
+}
+
+// Trong hàm login(name), hãy thêm dòng này ở cuối cùng:
+updateSkillUI();
+
+function activateSkill(type) {
+    if (isGameOver) return;
+    
+    const hintEl = document.getElementById('skill-hint');
+    
+    // 1. Nếu đang bật chính kỹ năng đó rồi thì tắt đi (Hủy chọn)
+    if (activeSkill === type) {
+        activeSkill = null;
+        if (hintEl) hintEl.style.display = 'none';
+        document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
+        return;
+    }
+
+    // 2. Kiểm tra số lượng đạo cụ còn lại (Dùng optional chaining cho an toàn)
+    if (!playerStats?.skills || playerStats.skills[type] <= 0) {
+        alert("Cậu hết đạo cụ này rồi, hãy hoàn thành nhiệm vụ bổ trợ để nhận thêm nhé! ✨");
+        return;
+    }
+
+    // 3. Xử lý riêng cho "Thẻ lật" (Tác dụng ngay)
+    if (type === 'shuffle') {
+        playSound('click');
+        
+        // Thẻ lật giờ có thể ra quả to hơn một chút cho "đáng đồng tiền bát gạo"
+        nextLevel = Math.floor(Math.random() * 5); 
+        updatePreview();
+        
+        // Gọi hàm trừ đạo cụ và lưu data
+        useSkill('shuffle');
+        
+        activeSkill = null; 
+        if (hintEl) hintEl.style.display = 'none';
+        document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
+    } 
+    // 4. Xử lý cho "Vạn năng" và "Thẻ xóa" (Chờ click vào ball)
+    else {
+        activeSkill = type;
+        playSound('click');
+        
+        if (hintEl) {
+            hintEl.style.display = 'block';
+            // Henry có thể tùy biến lời nhắn theo theme nếu muốn "xịn" hơn
+            if (type === 'delete') {
+                hintEl.innerHTML = "💣 Chọn 1 quả cầu để xóa toàn bộ cầu cùng loại!";
+            } else if (type === 'upgrade') {
+                hintEl.innerHTML = "🪄 Chọn 1 quả cầu để nâng cấp ngay lập tức!";
+            }
+        }
+
+        // Cập nhật trạng thái nút bấm
+        document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
+        const btnEl = document.getElementById('skill-' + type);
+        if (btnEl) btnEl.classList.add('active');
+    }
+}
+
+function useSkill(type) {
+    playerStats.skills[type]--;
+    updateSkillUI();
+    saveChallengeData();
+    playSound('merge');
+}
+
+// --- HÀM XỬ LÝ CLICK DÙNG KỸ NĂNG (ĐÃ FIX TỌA ĐỘ & TOUCH) ---
+const handleSkillAction = (e) => {
+    if (!activeSkill) return;
+
+    // Lấy tọa độ chuẩn kể cả khi dùng chuột hay cảm ứng
+    const rect = render.canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    // Tính toán tọa độ chính xác theo tỉ lệ thực của Game
+    const mouseX = (clientX - rect.left) * (WIDTH / rect.width);
+    const mouseY = (clientY - rect.top) * (HEIGHT / rect.height);
+
+    const bodies = Composite.allBodies(engine.world);
+    
+    // Tìm quả cầu bị chạm trúng (Tăng vùng nhận diện thêm 15px cho dễ bấm trên mobile)
+    const clickedBody = bodies.find(body => {
+        if (body.label !== "sphere") return false;
+        const dx = body.position.x - mouseX;
+        const dy = body.position.y - mouseY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < body.circleRadius + 15;
+    });
+
+    if (clickedBody) {
+        const currentLvl = clickedBody.plugin.level;
+        const { x, y } = clickedBody.position;
+
+        // 1. THẺ VẠN NĂNG (Nâng cấp)
+        if (activeSkill === 'upgrade') {
+            if (currentLvl < BALL_TYPES.length - 1) {
+                const newLvl = currentLvl + 1;
+                Composite.remove(engine.world, clickedBody);
+                const upgradedBall = createBall(x, y, newLvl);
+                upgradedBall.plugin.scale = 1; 
+                Composite.add(engine.world, upgradedBall);
+
+                // Cập nhật nhiệm vụ theo theme
+                if (playerStats?.quests) {
+                    const q = playerStats.quests[currentTheme];
+                    const levelMap = {
+                        5: { fruit: 'f4', animal: 'a4', cosmetic: 'c4', tech: 't4' },
+                        7: { fruit: 'f5', animal: 'a5', cosmetic: 'c5', tech: 't5' },
+                        9: { fruit: 'f8', animal: 'a8', cosmetic: 'c8', tech: 't8' }
+                    };
+                    if (levelMap[newLvl]) {
+                        const targetId = levelMap[newLvl][currentTheme];
+                        if (q[targetId]) {
+                            q[targetId].current++;
+                            checkQuestProgress(targetId);
+                        }
+                    }
+                    saveChallengeData();
+                }
+                showFloatingScore(x, y, "UPGRADE! ✨");
+                useSkill('upgrade');
+            } else {
+                alert("Quả này đã đạt cấp tối đa rồi! 🍉");
+            }
+        } 
+        // 2. THẺ XÓA (Xóa cùng loại)
+        else if (activeSkill === 'delete') {
+            let count = 0;
+            bodies.forEach(b => {
+                if (b.label === "sphere" && b.plugin.level === currentLvl) {
+                    showFloatingScore(b.position.x, b.position.y, "BOOM! 💣");
+                    Composite.remove(engine.world, b);
+                    count++;
+                }
+            });
+            if (count > 0) useSkill('delete');
+        }
+
+        // Tắt trạng thái chờ sau khi dùng xong
+        activeSkill = null;
+        document.getElementById('skill-hint').style.display = 'none';
+        document.querySelectorAll('.skill-btn').forEach(btn => btn.classList.remove('active'));
+    }
+};
+
+
+function openQuestModal() {
+    playSound('click');
+    renderQuests();
+    document.getElementById('quest-modal').style.display = 'flex';
+}
+
+function renderQuests() {
+    const list = document.getElementById('quest-list');
+    list.innerHTML = '';
+    
+    // Lấy bảng nhiệm vụ của theme HIỆN TẠI
+    const currentQuests = QUEST_THEMES[currentTheme];
+    
+    currentQuests.forEach(q => {
+        const status = playerStats.quests[currentTheme][q.id]; 
+        const percent = Math.min(100, (status.current / q.target) * 100);
+        
+        const item = document.createElement('div');
+        item.className = 'quest-item';
+        
+        // --- DÒNG CẦN SỬA: Gắn ID để sau này hàm jumpToQuest có thể tìm thấy ---
+        item.setAttribute('data-quest-id', q.id); 
+        
+        let actionBtn = '';
+        if (status.claimed) {
+            actionBtn = `<span style="color: #ccc; font-size: 12px; font-weight: bold;">ĐÃ NHẬN ✅</span>`;
+        } else if (status.current >= q.target) {
+            actionBtn = `<button class="btn-claim" onclick="claimQuestReward('${q.id}')">NHẬN</button>`;
+        } else {
+            actionBtn = `<span style="color: #ff5c8a; font-weight: 900; font-size: 13px;">${status.current}/${q.target}</span>`;
+        }
+
+        const rewardName = q.reward.type === 'delete' ? 'Thẻ xóa' : (q.reward.type === 'upgrade' ? 'Vạn năng' : 'Thẻ lật');
+
+        item.innerHTML = `
+            <div style="flex: 1; text-align: left;">
+                <div style="font-weight: bold; color: #ff5c8a; font-size: 14px; display: flex; align-items: center; gap: 5px;">
+                    <span>${q.icon}</span> ${q.title}
+                </div>
+                <div style="font-size: 11px; color: #888; margin: 2px 0;">${q.desc}</div>
+                <div style="font-size: 11px; color: #ff85a2; font-weight: bold;">Thưởng: +${q.reward.amount} ${rewardName}</div>
+                <div class="quest-progress-bar">
+                    <div class="quest-progress-fill" style="width: ${percent}%"></div>
+                </div>
+            </div>
+            <div style="margin-left: 15px; min-width: 70px; text-align: right;">${actionBtn}</div>
+        `;
+        list.appendChild(item);
+    });
+}
+
+function claimQuestReward(id) {
+    const questInfo = QUEST_THEMES[currentTheme].find(q => q.id === id);
+    const userQuestStatus = playerStats.quests[currentTheme][id];
+
+    if (questInfo && userQuestStatus && !userQuestStatus.claimed) {
+        playerStats.skills[questInfo.reward.type] += questInfo.reward.amount;
+        userQuestStatus.claimed = true;
+        
+        updateSkillUI();
+        saveChallengeData();
+        renderQuests();
+        playSound('merge');
+        
+        const rewardName = questInfo.reward.type === 'delete' ? 'Thẻ xóa' : (questInfo.reward.type === 'upgrade' ? 'Vạn năng' : 'Thẻ lật');
+        
+        showSuccess("Nhận Đạo Cụ!", `✨ Cậu đã nhận được thêm ${questInfo.reward.amount} ${rewardName} vào túi đồ bổ trợ rồi nhé!`, "🪄");
+    }
+}
+
+let lastCompletedQuestId = null; // Biến tạm lưu ID nhiệm vụ vừa xong
+
+function showQuestToast(questId) {
+    const qInfo = QUEST_THEMES[currentTheme].find(q => q.id === questId);
+    if(!qInfo) return;
+
+    const toast = document.getElementById('quest-toast');
+    document.getElementById('quest-toast-name').innerText = qInfo.title;
+    
+    // Lưu lại ID để khi click vào toast biết đường mà tìm
+    lastCompletedQuestId = questId; 
+    
+    playSound('merge');
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 5000); // Tăng lên 5s cho cư dân kịp ấn
+}
+
+// Hàm thần thánh để dịch chuyển đây!
+function jumpToQuest() {
+    if (!lastCompletedQuestId) return;
+
+    // 1. Mở Modal nhiệm vụ trước
+    openQuestModal();
+
+    // 2. Đợi một chút để Modal dựng xong HTML rồi mới dịch chuyển
+    setTimeout(() => {
+        const questItem = document.querySelector(`[data-quest-id="${lastCompletedQuestId}"]`);
+        if (questItem) {
+            questItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Thêm hiệu ứng nháy nhẹ để cư dân biết là cái này
+            questItem.style.backgroundColor = '#fff0f5';
+            setTimeout(() => questItem.style.backgroundColor = 'white', 1000);
+        }
+    }, 300);
+
+    // 3. Ẩn toast đi sau khi đã ấn
+    document.getElementById('quest-toast').classList.remove('show');
+}
+
+// Hàm kiểm tra xem nhiệm vụ có vừa hoàn thành không
+function checkQuestProgress(id) {
+    const qInfo = QUEST_THEMES[currentTheme].find(q => q.id === id);
+    if(!qInfo) return;
+    
+    const qStatus = playerStats.quests[currentTheme][id];
+    if (qStatus.current === qInfo.target && !qStatus.claimed) {
+        showQuestToast(id); // Truyền id vào đây nè Henry
+    }
+}
+
+function changeTheme(themeName) {
+    if (currentTheme === themeName) return;
+    playSound('click');
+    
+    currentTheme = themeName;
+    BALL_TYPES = THEMES[currentTheme]; 
+
+    // 1. Cập nhật trạng thái nút bấm (Giữ nguyên code cũ của cậu)
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.innerText.toLowerCase().includes(themeName === 'fruit' ? 'trái cây' : 
+                                                 themeName === 'animal' ? 'động vật' : 
+                                                 themeName === 'cosmetic' ? 'mỹ phẩm' : 'công nghệ')) {
+            btn.classList.add('active');
+        }
+    });
+
+    // --- PHẦN THÊM MỚI: CẬP NHẬT MÀU CHO CẦU ĐANG CHƠI ---
+    const bodies = Composite.allBodies(engine.world);
+    bodies.forEach(body => {
+        if (body.label === "sphere") {
+            const lvl = body.plugin.level;
+            const newType = BALL_TYPES[lvl];
+            // Cập nhật màu sắc hiển thị của Matter.js
+            body.render.fillStyle = newType.color;
+        }
+    });
+    // ---------------------------------------------------
+
+    updatePreview();
+    updateEvolutionChart();
+}
+
+function updateEvolutionChart() {
+    const chart = document.getElementById('evolution-chart');
+    if (!chart) return;
+    chart.innerHTML = ''; // Xóa bảng cũ đi vẽ lại
+    
+    BALL_TYPES.forEach((type, index) => {
+        const itemContainer = document.createElement('div');
+        itemContainer.style.display = 'flex';
+        itemContainer.style.flexDirection = 'column';
+        itemContainer.style.alignItems = 'center';
+
+        const circle = document.createElement('div');
+        circle.className = 'evo-item';
+        circle.style.backgroundColor = type.color;
+        circle.innerText = type.icon;
+        circle.style.fontSize = '18px';
+        
+        const label = document.createElement('div');
+        label.className = 'level-label';
+        label.innerText = `Lv.${index + 1}`;
+
+        itemContainer.appendChild(circle);
+        itemContainer.appendChild(label);
+        chart.appendChild(itemContainer);
+        
+        if (index < BALL_TYPES.length - 1) {
+            const arrow = document.createElement('span');
+            arrow.style.color = '#ffccd9';
+            arrow.style.marginBottom = '15px';
+            arrow.innerHTML = '→';
+            chart.appendChild(arrow);
+        }
+    });
+}
+
+function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.style.display = 'flex';
+        playSound('click');
+        // Nếu mở kho đồ thì cập nhật số lượng hiển thị ngay
+        if (id === 'skill-menu-modal') updateSkillUI();
+    }
+}
+
+function showSuccess(title, msg, icon) {
+    document.getElementById('success-title').innerText = title;
+    document.getElementById('success-msg').innerText = msg;
+    document.getElementById('success-icon').innerText = icon;
+    openModal('success-modal');
+}
+
+function openGameHistory() {
+    playSound('click');
+    const body = document.getElementById('game-history-body');
+    const logs = playerStats.gameLogs || [];
+
+    if (logs.length === 0) {
+        body.innerHTML = `<tr><td colspan="4" style="padding: 40px; color: #ccc; font-style: italic;">Chưa có ván chơi nào được ghi lại ✨</td></tr>`;
+    } else {
+        body.innerHTML = logs.map(log => `
+            <tr>
+                <td style="font-weight: bold; color: var(--accent-pink);">#${log.no}</td> <td style="font-size: 11px; color: #aaa;">${log.time}</td>
+                <td style="font-size: 18px;">${log.theme}</td>
+                <td><span class="history-score-badge">${log.score.toLocaleString()}</span></td>
+            </tr>
+        `).join('');
+    }
+    openModal('game-history-modal');
+}
+
+function getDurationString(startTime) {
+    const durationMs = Date.now() - startTime;
+    const totalSeconds = Math.floor(durationMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    // Trả về định dạng ví dụ: "3p 15s" hoặc "45s"
+    if (minutes > 0) {
+        return `${minutes}p ${seconds.toString().padStart(2, '0')}s`;
+    }
+    return `${seconds}s`;
+}
+
+// Cập nhật lại hàm toggleSound để đồng bộ với nút trong cài đặt
+function toggleSound() {
+    isMuted = !isMuted;
+    const switchEl = document.getElementById('sound-toggle-status');
+    const settingIcon = document.getElementById('setting-sound-icon');
+    const mainSoundBtn = document.getElementById('sound-toggle'); // Nút ngoài màn hình chính (nếu Henry muốn giữ)
+    const mainIcon = document.getElementById('sound-icon');
+
+    if (isMuted) {
+        switchEl.classList.remove('active');
+        settingIcon.innerText = '🔇';
+        if(mainSoundBtn) mainSoundBtn.classList.add('muted');
+        if(mainIcon) mainIcon.innerText = '🔇';
+    } else {
+        switchEl.classList.add('active');
+        settingIcon.innerText = '🔊';
+        if(mainSoundBtn) mainSoundBtn.classList.remove('muted');
+        if(mainIcon) mainIcon.innerText = '🔊';
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        playSound('click');
+    }
+}
+
+// Hàm hỗ trợ đăng xuất từ bên trong Cài đặt - Đã sửa lỗi không tắt popup
+function confirmLogoutFromSettings() {
+    // Chỉ ẩn modal, không phát âm thanh ở đây nữa
+    document.getElementById('settings-modal').style.display = 'none';
+    
+    // Gọi logout luôn, âm thanh sẽ phát ra từ trong hàm logout()
+    setTimeout(() => {
+        logout(); 
+    }, 100);
+}
+
+// Mở cửa hàng
+function openShop() {
+    playSound('click');
+    updateShopBalance();
+    document.getElementById('shop-modal').style.display = 'flex';
+}
+
+// Cập nhật số dư trong shop
+function updateShopBalance() {
+    const val = document.getElementById('shop-balance-val');
+    if(val && playerStats) val.innerText = playerStats.balance.toLocaleString();
+}
+
+// Biến tạm lưu thông tin món hàng đang định mua
+let pendingBuyData = null;
+
+function buyItem(type, amount, price) {
+    if (!playerStats) return;
+
+    // 1. Kiểm tra tiền trước khi cho hiện Popup (để đỡ mất công hỏi nếu không đủ tiền)
+    if (playerStats.balance < price) {
+        playSound('click');
+        alert("Ối! Ví của cậu không đủ số dư rồi. Hãy nạp thêm xu thiên thần để mua đạo cụ nhé! 💖");
+        return;
+    }
+
+    // 2. Lưu thông tin vào biến tạm
+    pendingBuyData = { type, amount, price };
+
+    // 3. Cập nhật nội dung cho Modal xác nhận
+    const itemName = type === 'shuffle' ? 'Thẻ Lật' : (type === 'delete' ? 'Thẻ Xóa' : 'Thẻ Vạn Năng');
+    document.getElementById('buy-price').innerText = price.toLocaleString() + "đ";
+    document.getElementById('buy-amount').innerText = amount + " " + itemName;
+
+    // 4. Gán sự kiện click cho nút "Mua luôn!" trong Modal
+    document.getElementById('btn-execute-buy').onclick = executeBuy;
+
+    // 5. Hiện Modal xác nhận
+    playSound('click');
+    document.getElementById('confirm-buy-modal').style.display = 'flex';
+}
+
+// Hàm thực thi việc trừ tiền và cộng đồ sau khi đã xác nhận
+function executeBuy() {
+    if (!pendingBuyData || !playerStats) return;
+
+    const { type, amount, price } = pendingBuyData;
+
+    // Trừ tiền và cộng đạo cụ
+    playerStats.balance -= price;
+    playerStats.skills[type] += amount;
+
+    // Lưu dữ liệu
+    saveChallengeData();
+    
+    // Cập nhật UI
+    updateShopBalance();
+    updateBalanceUI(); 
+    updateSkillUI();
+
+    // Đóng các Modal
+    closeModal('confirm-buy-modal');
+    // Có thể đóng luôn shop hoặc giữ lại tùy Henry, ở đây mình giữ lại Shop cho tiện mua tiếp
+    
+    // Thông báo thành công rực rỡ
+    const itemName = type === 'shuffle' ? 'Thẻ Lật' : (type === 'delete' ? 'Thẻ Xóa' : 'Thẻ Vạn Năng');
+    playSound('merge');
+    
+    showSuccess(
+        "Mua Thành Công! 🛍️", 
+        `Cảm ơn cư dân! Cậu đã mua thành công ${amount} ${itemName}. Đồ đã được chuyển vào túi rồi nhé! ✨`, 
+        "🍭"
+    );
+
+    // Reset biến tạm
+    pendingBuyData = null;
+}
+
+function updateLiveTimer() {
+    const timerEl = document.getElementById('live-timer-val');
+    
+    // 1. Kiểm tra điều kiện dừng: Nếu không có element, game over, hoặc chưa đăng nhập thì nghỉ
+    if (!timerEl || isGameOver || loginOverlay.style.display !== 'none') return;
+
+    // 2. TÍNH TOÁN THỜI GIAN TRÔI QUA TRONG PHIÊN NÀY
+    // SỬA TẠI ĐÂY: Nếu gameStartTime chưa có (chưa thả cầu), phiên này coi như = 0ms
+    let currentSessionMs = (gameStartTime !== null) ? (Date.now() - gameStartTime) : 0;
+    
+    // 3. TỔNG THỜI GIAN = (Thời gian tích lũy từ trước) + (Thời gian đang trôi ở phiên này)
+    let durationMs = (window.oldPlayedTime || 0) + currentSessionMs;
+
+    // 4. ĐỔI RA PHÚT : GIÂY
+    const totalSeconds = Math.floor(durationMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    // 5. HIỂN THỊ (Đảm bảo luôn hiện thời gian kể cả khi chưa thả cầu)
+    timerEl.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    // 6. HIỆU ỨNG NHỊP ĐẬP CHO ICON
+    if (timerEl.previousElementSibling) {
+        // Chỉ cho tim đập khi game thực sự đang trôi (đã thả cầu)
+        if (gameStartTime !== null) {
+            timerEl.previousElementSibling.style.transform = (seconds % 2 === 0) ? 'scale(1.1)' : 'scale(1)';
+        } else {
+            timerEl.previousElementSibling.style.transform = 'scale(1)';
+        }
+    }
+}
+
+function msToTime(duration) {
+    let seconds = Math.floor((duration / 1000) % 60);
+    let minutes = Math.floor((duration / (1000 * 60)) % 60);
+    return (minutes > 0) ? `${minutes}p ${seconds}s` : `${seconds}s`;
+}
+
+// Chạy vòng lặp cập nhật mỗi giây
+setInterval(updateLiveTimer, 1000);
+</script>
+</body>
+</html>
