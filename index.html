@@ -3890,15 +3890,6 @@ function msToTime(duration) {
 
 // Chạy vòng lặp cập nhật mỗi giây
 setInterval(updateLiveTimer, 1000);
-
-// Đăng ký Service Worker đơn giản để kích hoạt tính năng PWA
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('data:text/javascript;base64,' + btoa('self.addEventListener("fetch", (e) => { e.respondWith(fetch(e.request)); });'))
-        .then(() => console.log("Sweetie Town đã sẵn sàng để cài đặt! ✨"))
-        .catch(err => console.log("Lỗi PWA: ", err));
-    });
-}
 </script>
 </body>
 </html>
