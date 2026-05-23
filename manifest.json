@@ -1,20 +1,16 @@
 {
   "name": "Sweetie Town: Merge Life",
   "short_name": "Sweetie Town",
-  "start_url": "index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#fff0f5",
   "theme_color": "#ff85a2",
   "icons": [
     {
       "src": "https://i.postimg.cc/6QsFhGGC/unnamed-(1).png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://i.postimg.cc/6QsFhGGC/unnamed-(1).png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
